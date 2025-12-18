@@ -1,125 +1,139 @@
-import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Button } from '@/components/ui/button'
-import { ArrowLeft, TrendingUp, Clock } from 'lucide-react'
 import { motion } from 'motion/react'
-import { generateRelatedTopics, SampleStories } from '@/data/content'
-import type { Story, RelatedTopic } from '@/types'
+import { ArrowLeft, ExternalLink, BookOpen } from 'lucide-react'
+import { useUserStore } from '@/stores/userStore'
 
-interface ExploreMorePageProps {
-  story: Story | null
-  onSelectStory: (story: Story) => void
-}
-
-export function ExploreMorePage({ story, onSelectStory }: ExploreMorePageProps) {
+export function ExploreMorePage() {
   const navigate = useNavigate()
-  const [topics, setTopics] = useState<RelatedTopic[]>([])
+  const { currentStory } = useUserStore()
 
-  useEffect(() => {
-    if (story) {
-      setTopics(generateRelatedTopics(story))
-    } else {
-      navigate('/actions')
-    }
-  }, [story, navigate])
+  // Generate related topics based on current story
+  const relatedTopics = currentStory?.relatedTopics || [
+    'Deep Dive Article',
+    'Related Research',
+    'Video Explanation',
+    'Similar Topics',
+  ]
 
-  if (!story) return null
-
-  const handleSelectTopic = (topic: RelatedTopic) => {
-    // Find a related story or create one from the topic
-    const relatedStory = SampleStories.find(
-      (s) => s.title.toLowerCase().includes(topic.category.toLowerCase())
-    ) || {
-      id: topic.id + 100,
-      title: topic.title,
-      description: topic.description,
-      imageUrl: topic.imageUrl,
-    }
-    onSelectStory(relatedStory)
-    navigate('/stories')
-  }
+  const resources = [
+    {
+      id: '1',
+      title: `Understanding ${currentStory?.title || 'This Topic'}`,
+      type: 'Article',
+      source: 'Encyclopedia',
+      readTime: '5 min read',
+    },
+    {
+      id: '2',
+      title: 'Scientific Research and Findings',
+      type: 'Research Paper',
+      source: 'Academic Journal',
+      readTime: '15 min read',
+    },
+    {
+      id: '3',
+      title: 'Expert Video Explanation',
+      type: 'Video',
+      source: 'Educational Channel',
+      readTime: '10 min watch',
+    },
+    {
+      id: '4',
+      title: 'Hands-on Exploration',
+      type: 'Interactive',
+      source: 'Learning Platform',
+      readTime: '20 min activity',
+    },
+  ]
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-purple-50">
+    <div className="flex flex-col min-h-screen bg-white">
       {/* Header */}
-      <div className="flex items-center gap-3 px-4 py-4 bg-white border-b">
+      <div className="flex items-center justify-between px-4 py-4 border-b border-gray-100">
         <button
           onClick={() => navigate('/actions')}
-          className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+          className="p-2 -ml-2 hover:bg-gray-100 rounded-full transition-colors"
         >
           <ArrowLeft className="w-6 h-6" />
         </button>
         <h2 className="font-medium">Explore More</h2>
+        <div className="w-10"></div>
       </div>
 
-      <div className="px-6 py-8">
+      {/* Content */}
+      <div className="flex-1 overflow-y-auto px-6 py-8">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
         >
-          <h1 className="text-2xl font-bold mb-2">Related Topics</h1>
-          <p className="text-gray-600 mb-8">
-            Discover more topics related to {story.title}.
+          <h1 className="text-2xl font-bold mb-2">
+            Continue Learning
+          </h1>
+          <p className="text-gray-500 mb-8">
+            Dive deeper into topics related to "{currentStory?.title}"
           </p>
 
-          <div className="grid gap-4">
-            {topics.map((topic, index) => (
-              <motion.button
-                key={topic.id}
-                onClick={() => handleSelectTopic(topic)}
-                className="w-full p-4 bg-white rounded-2xl shadow-sm hover:shadow-md transition-all duration-200 text-left group"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1 }}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-              >
-                <div className="flex gap-4">
-                  <div
-                    className="w-20 h-20 rounded-xl bg-cover bg-center flex-shrink-0"
-                    style={{ backgroundImage: `url(${topic.imageUrl})` }}
-                  />
+          {/* Related Topics */}
+          <div className="mb-8">
+            <h3 className="text-sm font-medium text-gray-400 mb-4">RELATED TOPICS</h3>
+            <div className="flex flex-wrap gap-2">
+              {relatedTopics.map((topic, index) => (
+                <motion.button
+                  key={index}
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: index * 0.1 }}
+                  className="px-4 py-2 bg-gray-100 rounded-full text-sm hover:bg-gray-200 transition-colors"
+                >
+                  {topic}
+                </motion.button>
+              ))}
+            </div>
+          </div>
+
+          {/* Resources */}
+          <div>
+            <h3 className="text-sm font-medium text-gray-400 mb-4">CURATED RESOURCES</h3>
+            <div className="space-y-4">
+              {resources.map((resource, index) => (
+                <motion.div
+                  key={resource.id}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.2 + index * 0.1 }}
+                  className="flex items-start gap-4 p-4 border border-gray-200 rounded-2xl hover:border-black transition-colors cursor-pointer group"
+                >
+                  <div className="p-3 bg-gray-100 rounded-xl group-hover:bg-black group-hover:text-white transition-colors">
+                    <BookOpen className="w-5 h-5" />
+                  </div>
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-xs font-medium text-purple-600 bg-purple-100 px-2 py-0.5 rounded-full">
-                        {topic.category}
+                    <h4 className="font-medium mb-1 truncate">{resource.title}</h4>
+                    <div className="flex items-center gap-2 text-sm text-gray-500">
+                      <span className="px-2 py-0.5 bg-gray-100 rounded text-xs">
+                        {resource.type}
                       </span>
-                      {topic.trending && (
-                        <span className="flex items-center gap-1 text-xs text-orange-600">
-                          <TrendingUp className="w-3 h-3" />
-                          Trending
-                        </span>
-                      )}
-                    </div>
-                    <h3 className="font-semibold text-gray-900 mb-1 line-clamp-1 group-hover:text-purple-600 transition-colors">
-                      {topic.title}
-                    </h3>
-                    <p className="text-sm text-gray-500 line-clamp-2 mb-2">
-                      {topic.description}
-                    </p>
-                    <div className="flex items-center gap-1 text-xs text-gray-400">
-                      <Clock className="w-3 h-3" />
-                      {topic.readTime}
+                      <span>{resource.source}</span>
+                      <span>•</span>
+                      <span>{resource.readTime}</span>
                     </div>
                   </div>
-                </div>
-              </motion.button>
-            ))}
+                  <ExternalLink className="w-5 h-5 text-gray-400 group-hover:text-black transition-colors flex-shrink-0" />
+                </motion.div>
+              ))}
+            </div>
           </div>
         </motion.div>
+      </div>
 
-        <div className="mt-8">
-          <Button
-            onClick={() => navigate('/onboarding')}
-            variant="outline"
-            className="w-full"
-          >
-            Update My Interests
-          </Button>
-        </div>
+      {/* Footer */}
+      <div className="p-6 border-t border-gray-100">
+        <button
+          onClick={() => navigate('/stories')}
+          className="w-full py-4 px-6 bg-black text-white rounded-full hover:bg-gray-800 transition-colors"
+        >
+          Back to Stories
+        </button>
       </div>
     </div>
   )
 }
-

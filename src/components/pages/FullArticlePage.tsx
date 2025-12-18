@@ -1,33 +1,30 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Button } from '@/components/ui/button'
 import { ArrowLeft, ExternalLink, Calendar, Building } from 'lucide-react'
 import { motion } from 'motion/react'
 import { generateArticles } from '@/data/content'
-import type { Story, Article } from '@/types'
+import { useUserStore } from '@/stores/userStore'
+import type { Article } from '@/types'
 
-interface FullArticlePageProps {
-  story: Story | null
-}
-
-export function FullArticlePage({ story }: FullArticlePageProps) {
+export function FullArticlePage() {
   const navigate = useNavigate()
+  const { currentStory } = useUserStore()
   const [articles, setArticles] = useState<Article[]>([])
 
   useEffect(() => {
-    if (story) {
-      setArticles(generateArticles(story))
+    if (currentStory) {
+      setArticles(generateArticles(currentStory))
     } else {
       navigate('/actions')
     }
-  }, [story, navigate])
+  }, [currentStory, navigate])
 
-  if (!story) return null
+  if (!currentStory) return null
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-orange-50">
+    <div className="min-h-screen bg-white">
       {/* Header */}
-      <div className="flex items-center gap-3 px-4 py-4 bg-white border-b">
+      <div className="flex items-center gap-3 px-4 py-4 border-b border-gray-100">
         <button
           onClick={() => navigate('/actions')}
           className="p-2 hover:bg-gray-100 rounded-full transition-colors"
@@ -44,8 +41,8 @@ export function FullArticlePage({ story }: FullArticlePageProps) {
           transition={{ duration: 0.5 }}
         >
           <h1 className="text-2xl font-bold mb-2">Dive Deeper</h1>
-          <p className="text-gray-600 mb-8">
-            Explore these articles to learn more about {story.title}.
+          <p className="text-gray-500 mb-8">
+            Explore these articles to learn more about {currentStory.title}.
           </p>
 
           <div className="space-y-4">
@@ -55,15 +52,14 @@ export function FullArticlePage({ story }: FullArticlePageProps) {
                 href={article.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="block p-4 bg-white rounded-2xl shadow-sm hover:shadow-md transition-all duration-200 group"
+                className="block p-4 border border-gray-200 rounded-2xl hover:border-black transition-all duration-200 group"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.1 }}
-                whileHover={{ scale: 1.02 }}
               >
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1">
-                    <h3 className="font-semibold text-gray-900 mb-2 group-hover:text-orange-600 transition-colors">
+                    <h3 className="font-semibold text-gray-900 mb-2 group-hover:text-black transition-colors">
                       {article.title}
                     </h3>
                     <div className="flex items-center gap-4 text-sm text-gray-500">
@@ -77,7 +73,7 @@ export function FullArticlePage({ story }: FullArticlePageProps) {
                       </span>
                     </div>
                   </div>
-                  <ExternalLink className="w-5 h-5 text-gray-400 group-hover:text-orange-600 transition-colors" />
+                  <ExternalLink className="w-5 h-5 text-gray-400 group-hover:text-black transition-colors" />
                 </div>
               </motion.a>
             ))}
@@ -85,16 +81,14 @@ export function FullArticlePage({ story }: FullArticlePageProps) {
         </motion.div>
 
         <div className="mt-8">
-          <Button
+          <button
             onClick={() => navigate('/actions')}
-            variant="outline"
-            className="w-full"
+            className="w-full py-4 px-6 border-2 border-black rounded-full hover:bg-gray-50 transition-colors"
           >
             Back to Actions
-          </Button>
+          </button>
         </div>
       </div>
     </div>
   )
 }
-

@@ -18,24 +18,13 @@ import {
 } from '@/components/pages'
 
 function App() {
-  const {
-    user,
-    currentStory,
-    isLoading,
-    signUp,
-    login,
-    logout,
-    completeOnboarding,
-    selectDailyGoal,
-    selectStory,
-    clearCurrentStory,
-  } = useUserStore()
+  const { user, isLoading, setDailyGoal, setCurrentStory } = useUserStore()
 
   // Show loading state while checking auth
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-purple-50">
-        <div className="animate-pulse text-purple-600 text-xl">Loading...</div>
+      <div className="min-h-screen flex items-center justify-center bg-white">
+        <div className="animate-pulse text-black text-xl">Loading...</div>
       </div>
     )
   }
@@ -54,50 +43,30 @@ function App() {
           <Route
             path="/signup"
             element={
-              user ? (
-                <Navigate to="/welcome-home" replace />
-              ) : (
-                <SignUpPage onSignUp={signUp} />
-              )
+              user ? <Navigate to="/welcome-home" replace /> : <SignUpPage />
             }
           />
           <Route
             path="/login"
             element={
-              user ? (
-                <Navigate to="/welcome-home" replace />
-              ) : (
-                <LoginPage onLogin={login} />
-              )
+              user ? <Navigate to="/welcome-home" replace /> : <LoginPage />
             }
           />
 
           {/* Protected Routes */}
           <Route
             path="/onboarding"
-            element={
-              user && !user.hasCompletedOnboarding ? (
-                <OnboardingPage onComplete={completeOnboarding} />
-              ) : (
-                <Navigate to="/" replace />
-              )
-            }
+            element={user ? <OnboardingPage /> : <Navigate to="/" replace />}
           />
           <Route
             path="/welcome-home"
-            element={
-              user ? (
-                <WelcomeHomePage userName={user.name} onLogout={logout} />
-              ) : (
-                <Navigate to="/" replace />
-              )
-            }
+            element={user ? <WelcomeHomePage /> : <Navigate to="/" replace />}
           />
           <Route
             path="/daily-goal"
             element={
               user ? (
-                <DailyGoalPage onSelectGoal={selectDailyGoal} />
+                <DailyGoalPage onSelectGoal={setDailyGoal} />
               ) : (
                 <Navigate to="/" replace />
               )
@@ -107,7 +76,7 @@ function App() {
             path="/stories"
             element={
               user ? (
-                <StoriesPage onSelectStory={selectStory} />
+                <StoriesPage onSelectStory={setCurrentStory} />
               ) : (
                 <Navigate to="/" replace />
               )
@@ -115,69 +84,31 @@ function App() {
           />
           <Route
             path="/reflection"
-            element={
-              user ? (
-                <ReflectionPage story={currentStory} />
-              ) : (
-                <Navigate to="/" replace />
-              )
-            }
+            element={user ? <ReflectionPage /> : <Navigate to="/" replace />}
           />
           <Route
             path="/chunks"
-            element={
-              user ? (
-                <ChunksPage story={currentStory} />
-              ) : (
-                <Navigate to="/" replace />
-              )
-            }
+            element={user ? <ChunksPage /> : <Navigate to="/" replace />}
           />
           <Route
             path="/actions"
-            element={
-              user ? (
-                <ActionsPage onSkip={clearCurrentStory} />
-              ) : (
-                <Navigate to="/" replace />
-              )
-            }
+            element={user ? <ActionsPage /> : <Navigate to="/" replace />}
           />
           <Route
             path="/chatbot"
-            element={
-              user ? (
-                <ChatbotPage story={currentStory} />
-              ) : (
-                <Navigate to="/" replace />
-              )
-            }
+            element={user ? <ChatbotPage /> : <Navigate to="/" replace />}
           />
           <Route
             path="/quiz"
-            element={
-              user ? <QuizPage story={currentStory} /> : <Navigate to="/" replace />
-            }
+            element={user ? <QuizPage /> : <Navigate to="/" replace />}
           />
           <Route
             path="/full-article"
-            element={
-              user ? (
-                <FullArticlePage story={currentStory} />
-              ) : (
-                <Navigate to="/" replace />
-              )
-            }
+            element={user ? <FullArticlePage /> : <Navigate to="/" replace />}
           />
           <Route
-            path="/explore-more"
-            element={
-              user ? (
-                <ExploreMorePage story={currentStory} onSelectStory={selectStory} />
-              ) : (
-                <Navigate to="/" replace />
-              )
-            }
+            path="/explore"
+            element={user ? <ExploreMorePage /> : <Navigate to="/" replace />}
           />
 
           {/* Fallback */}

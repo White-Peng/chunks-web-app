@@ -1,191 +1,137 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'motion/react'
 import { ArrowLeft, X } from 'lucide-react'
-import { generateChunksFor } from '@/data/content'
-import type { Story, Chunk } from '@/types'
+import { useUserStore } from '@/stores/userStore'
 
-interface ChunksPageProps {
-  story: Story | null
-}
-
-export function ChunksPage({ story }: ChunksPageProps) {
+export function ChunksPage() {
   const navigate = useNavigate()
-  const [chunks, setChunks] = useState<Chunk[]>([])
-  const [currentChunkIndex, setCurrentChunkIndex] = useState(0)
-  const [selectedChunk, setSelectedChunk] = useState<Chunk | null>(null)
+  const { currentStory } = useUserStore()
+  const [currentIndex, setCurrentIndex] = useState(0)
 
-  useEffect(() => {
-    if (story) {
-      setChunks(generateChunksFor(story))
-    } else {
-      navigate('/stories')
-    }
-  }, [story, navigate])
-
-  if (!story) return null
-
-  const handleChunkClick = (chunk: Chunk, index: number) => {
-    setCurrentChunkIndex(index)
-    setSelectedChunk(chunk)
+  if (!currentStory) {
+    navigate('/stories')
+    return null
   }
 
-  const closeChunkDetail = () => {
-    setSelectedChunk(null)
-  }
+  const chunks = currentStory.chunks
+  const currentChunk = chunks[currentIndex]
+  const progress = ((currentIndex + 1) / chunks.length) * 100
 
-  const nextChunk = () => {
-    if (currentChunkIndex < chunks.length - 1) {
-      const nextIndex = currentChunkIndex + 1
-      setCurrentChunkIndex(nextIndex)
-      setSelectedChunk(chunks[nextIndex])
-    } else {
-      closeChunkDetail()
-      setTimeout(() => navigate('/actions'), 300)
+  const handleTap = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect()
+    const x = e.clientX - rect.left
+    const thirdWidth = rect.width / 3
+
+    if (x < thirdWidth) {
+      // Left third - previous
+      if (currentIndex > 0) {
+        setCurrentIndex(currentIndex - 1)
+      }
+    } else if (x > thirdWidth * 2) {
+      // Right third - next
+      if (currentIndex < chunks.length - 1) {
+        setCurrentIndex(currentIndex + 1)
+      } else {
+        // Finished all chunks
+        handleComplete()
+      }
     }
   }
 
-  const prevChunk = () => {
-    if (currentChunkIndex > 0) {
-      const prevIndex = currentChunkIndex - 1
-      setCurrentChunkIndex(prevIndex)
-      setSelectedChunk(chunks[prevIndex])
+  const handleComplete = () => {
+    // Mark story as consumed
+    const consumedStories = JSON.parse(localStorage.getItem('consumedStories') || '[]')
+    if (!consumedStories.includes(currentStory.id)) {
+      consumedStories.push(currentStory.id)
+      localStorage.setItem('consumedStories', JSON.stringify(consumedStories))
     }
+    navigate('/quiz')
+  }
+
+  const handleExit = () => {
+    navigate('/stories')
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-purple-50">
+    <div className="flex flex-col min-h-screen bg-white" onClick={handleTap}>
       {/* Header */}
-      <div className="sticky top-0 z-20 flex items-center justify-between px-4 py-4 bg-white/80 backdrop-blur-sm border-b">
+      <div className="flex items-center justify-between px-4 pt-4 pb-2">
         <button
-          onClick={() => navigate('/reflection')}
-          className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+          onClick={(e) => {
+            e.stopPropagation()
+            navigate('/stories')
+          }}
+          className="p-2 -ml-2 hover:bg-gray-100 rounded-full transition-colors z-10"
         >
           <ArrowLeft className="w-6 h-6" />
         </button>
-        <h2 className="font-medium">Chunks</h2>
-        <div className="w-10"></div>
-      </div>
 
-      {/* Topic Header */}
-      <div className="px-6 py-8 border-b bg-white">
-        <p className="text-purple-600 uppercase tracking-wider text-sm mb-2">
-          About {story.title}
-        </p>
-        <h1 className="text-2xl font-bold mb-2">6 Chunks to Explore</h1>
-        <p className="text-gray-600">
-          Tap on any chunk to dive deeper into the topic.
-        </p>
-      </div>
-
-      {/* Chunks Grid */}
-      <div className="grid grid-cols-2 gap-4 p-6">
-        {chunks.map((chunk, index) => (
-          <motion.button
-            key={chunk.id}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.1 }}
-            onClick={() => handleChunkClick(chunk, index)}
-            className="relative aspect-square rounded-2xl overflow-hidden group shadow-lg"
-          >
-            {/* Background Image */}
-            <div
-              className="absolute inset-0 bg-cover bg-center transition-transform duration-300 group-hover:scale-110"
-              style={{ backgroundImage: `url(${chunk.imageUrl})` }}
-            >
-              <div className="absolute inset-0 bg-gradient-to-b from-black/40 to-black/70"></div>
-            </div>
-
-            {/* Content */}
-            <div className="absolute inset-0 p-4 flex flex-col justify-end text-left">
-              <p className="text-white/70 text-sm mb-1">Chunk {index + 1}</p>
-              <h3 className="text-white font-semibold">{chunk.title}</h3>
-            </div>
-          </motion.button>
-        ))}
-      </div>
-
-      {/* Full Screen Chunk Detail */}
-      <AnimatePresence>
-        {selectedChunk && (
+        {/* Progress Bar */}
+        <div className="flex-1 mx-4 h-1 bg-gray-200 rounded-full overflow-hidden">
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-30 bg-black"
+            className="h-full bg-black"
+            initial={{ width: 0 }}
+            animate={{ width: `${progress}%` }}
+            transition={{ duration: 0.3 }}
+          />
+        </div>
+
+        <button
+          onClick={(e) => {
+            e.stopPropagation()
+            handleExit()
+          }}
+          className="p-2 -mr-2 hover:bg-gray-100 rounded-full transition-colors z-10"
+        >
+          <X className="w-6 h-6" />
+        </button>
+      </div>
+
+      {/* Content */}
+      <div className="flex-1 flex flex-col items-center justify-center px-8 py-12">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={currentIndex}
+            initial={{ opacity: 0, x: 30 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -30 }}
+            transition={{ duration: 0.3 }}
+            className="w-full max-w-md text-center"
           >
-            {/* Close Button */}
-            <button
-              onClick={closeChunkDetail}
-              className="absolute top-4 right-4 z-40 p-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors"
-            >
-              <X className="w-6 h-6 text-white" />
-            </button>
-
-            {/* Progress Indicators */}
-            <div className="absolute top-20 left-0 right-0 flex justify-center gap-2 px-4 z-30">
-              {chunks.map((_, index) => (
-                <div
-                  key={index}
-                  className={`h-1 flex-1 rounded-full transition-colors ${
-                    index === currentChunkIndex ? 'bg-white' : 'bg-white/30'
-                  }`}
+            {/* Chunk Image (if available) */}
+            {currentChunk.imageUrl && (
+              <div className="mb-8 mx-auto w-48 h-48 rounded-2xl overflow-hidden">
+                <img
+                  src={currentChunk.imageUrl}
+                  alt={currentChunk.title}
+                  className="w-full h-full object-cover"
                 />
-              ))}
-            </div>
+              </div>
+            )}
 
-            {/* Tap Areas */}
-            <button
-              onClick={prevChunk}
-              className="absolute left-0 top-0 bottom-0 w-1/3 z-10"
-              style={{ WebkitTapHighlightColor: 'transparent' }}
-            />
-            <button
-              onClick={nextChunk}
-              className="absolute right-0 top-0 bottom-0 w-1/3 z-10"
-              style={{ WebkitTapHighlightColor: 'transparent' }}
-            />
+            {/* Chunk Title */}
+            <h2 className="text-2xl font-bold mb-6">
+              {currentChunk.title}
+            </h2>
 
-            {/* Background Image */}
-            <div
-              className="absolute inset-0 bg-cover bg-center"
-              style={{ backgroundImage: `url(${selectedChunk.imageUrl})` }}
-            >
-              <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/50 to-black/80"></div>
-            </div>
-
-            {/* Content */}
-            <div className="absolute bottom-0 left-0 right-0 p-8 pb-16">
-              <motion.div
-                key={selectedChunk.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="space-y-4"
-              >
-                <p className="text-white/70 uppercase tracking-wider text-sm">
-                  Chunk {currentChunkIndex + 1} of {chunks.length}
-                </p>
-                <h1 className="text-white text-2xl font-bold">
-                  {selectedChunk.title}
-                </h1>
-                <p className="text-white/90 text-lg">{selectedChunk.content}</p>
-
-                {/* Navigation Hint */}
-                <div className="pt-8 flex justify-between text-white/40 text-sm">
-                  <span>{currentChunkIndex > 0 ? '← Tap left' : ''}</span>
-                  <span>
-                    {currentChunkIndex < chunks.length - 1
-                      ? 'Tap right →'
-                      : 'Tap right to finish →'}
-                  </span>
-                </div>
-              </motion.div>
-            </div>
+            {/* Chunk Content */}
+            <p className="text-gray-600 text-lg leading-relaxed">
+              {currentChunk.content}
+            </p>
           </motion.div>
-        )}
-      </AnimatePresence>
+        </AnimatePresence>
+      </div>
+
+      {/* Footer Hint */}
+      <div className="px-8 pb-8 text-center">
+        <p className="text-gray-400 text-sm">
+          Tap left to go back • Tap right to continue
+        </p>
+        <p className="text-gray-300 text-xs mt-2">
+          {currentIndex + 1} of {chunks.length}
+        </p>
+      </div>
     </div>
   )
 }
-

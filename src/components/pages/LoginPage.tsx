@@ -1,93 +1,105 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { ArrowLeft } from 'lucide-react'
 import { motion } from 'motion/react'
+import { ArrowLeft } from 'lucide-react'
+import { useUserStore } from '@/stores/userStore'
 
-interface LoginPageProps {
-  onLogin: (email: string, password: string) => void
-}
-
-export function LoginPage({ onLogin }: LoginPageProps) {
+export function LoginPage() {
   const navigate = useNavigate()
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
+  const { login } = useUserStore()
+  const [formData, setFormData] = useState({
+    email: '',
+    password: '',
+  })
+  const [error, setError] = useState('')
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    if (email && password) {
-      onLogin(email, password)
-      navigate('/welcome-home')
+    setError('')
+
+    if (!formData.email.trim()) {
+      setError('Please enter your email')
+      return
     }
+    if (!formData.password.trim()) {
+      setError('Please enter your password')
+      return
+    }
+
+    login(formData.email, formData.password)
+    navigate('/welcome-home')
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-purple-50">
+    <div className="flex flex-col min-h-screen bg-white px-6 py-8">
       {/* Header */}
-      <div className="flex items-center px-4 py-4">
-        <button
-          onClick={() => navigate('/')}
-          className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-        >
-          <ArrowLeft className="w-6 h-6" />
-        </button>
-      </div>
+      <button
+        onClick={() => navigate('/')}
+        className="p-2 -ml-2 hover:bg-gray-100 rounded-full transition-colors w-fit"
+      >
+        <ArrowLeft className="w-6 h-6" />
+      </button>
 
-      <div className="flex flex-col items-center justify-center px-6 pt-8">
-        <motion.div
-          className="w-full max-w-md"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-        >
-          <h1 className="text-3xl font-bold mb-2">Welcome Back</h1>
-          <p className="text-gray-600 mb-8">Sign in to continue your journey</p>
+      <motion.div
+        className="flex-1 flex flex-col justify-center max-w-md mx-auto w-full"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+      >
+        <h1 className="text-3xl font-bold mb-2">Welcome Back</h1>
+        <p className="text-gray-500 mb-8">Continue your learning journey</p>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Email
-              </label>
-              <Input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="Enter your email"
-                required
-              />
-            </div>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium mb-2">Email</label>
+            <input
+              type="email"
+              value={formData.email}
+              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              placeholder="your@email.com"
+              className="w-full px-4 py-4 bg-gray-100 rounded-2xl focus:outline-none focus:ring-2 focus:ring-black/10"
+            />
+          </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Password
-              </label>
-              <Input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Enter your password"
-                required
-              />
-            </div>
+          <div>
+            <label className="block text-sm font-medium mb-2">Password</label>
+            <input
+              type="password"
+              value={formData.password}
+              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+              placeholder="••••••••"
+              className="w-full px-4 py-4 bg-gray-100 rounded-2xl focus:outline-none focus:ring-2 focus:ring-black/10"
+            />
+          </div>
 
-            <Button type="submit" className="w-full" size="lg">
-              Log In
-            </Button>
-          </form>
-
-          <p className="text-center text-gray-600 mt-6">
-            Don't have an account?{' '}
-            <button
-              onClick={() => navigate('/signup')}
-              className="text-purple-600 hover:text-purple-700 font-medium"
+          {error && (
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="text-red-500 text-sm"
             >
-              Sign up
-            </button>
-          </p>
-        </motion.div>
-      </div>
+              {error}
+            </motion.p>
+          )}
+
+          <button
+            type="submit"
+            className="w-full py-4 px-6 bg-black text-white rounded-full hover:bg-gray-800 transition-colors mt-8"
+          >
+            LOG IN
+          </button>
+        </form>
+
+        <p className="text-center text-gray-500 mt-8">
+          Don't have an account?{' '}
+          <button
+            onClick={() => navigate('/signup')}
+            className="text-black font-medium hover:underline"
+          >
+            Sign up
+          </button>
+        </p>
+      </motion.div>
     </div>
   )
 }
-

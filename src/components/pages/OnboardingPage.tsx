@@ -1,91 +1,114 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Button } from '@/components/ui/button'
-import { InterestOptions, type Interest } from '@/types'
-import { motion } from 'motion/react'
-import { cn } from '@/lib/utils'
+import { motion, AnimatePresence } from 'motion/react'
+import { ArrowLeft, Check } from 'lucide-react'
+import { useUserStore } from '@/stores/userStore'
 
-interface OnboardingPageProps {
-  onComplete: (interests: Interest[]) => void
-}
+const INTERESTS = [
+  { id: 'technology', label: 'Technology', emoji: '💻' },
+  { id: 'science', label: 'Science', emoji: '🔬' },
+  { id: 'art', label: 'Art & Design', emoji: '🎨' },
+  { id: 'business', label: 'Business', emoji: '💼' },
+  { id: 'health', label: 'Health & Wellness', emoji: '🧘' },
+  { id: 'history', label: 'History', emoji: '📜' },
+  { id: 'psychology', label: 'Psychology', emoji: '🧠' },
+  { id: 'philosophy', label: 'Philosophy', emoji: '🤔' },
+  { id: 'nature', label: 'Nature', emoji: '🌿' },
+  { id: 'music', label: 'Music', emoji: '🎵' },
+  { id: 'travel', label: 'Travel', emoji: '✈️' },
+  { id: 'food', label: 'Food & Cooking', emoji: '🍳' },
+]
 
-export function OnboardingPage({ onComplete }: OnboardingPageProps) {
+export function OnboardingPage() {
   const navigate = useNavigate()
-  const [selectedInterests, setSelectedInterests] = useState<Interest[]>([])
+  const { setInterests } = useUserStore()
+  const [selectedInterests, setSelectedInterests] = useState<string[]>([])
 
-  const toggleInterest = (interest: Interest) => {
+  const toggleInterest = (id: string) => {
     setSelectedInterests((prev) =>
-      prev.includes(interest)
-        ? prev.filter((i) => i !== interest)
-        : [...prev, interest]
+      prev.includes(id)
+        ? prev.filter((i) => i !== id)
+        : [...prev, id]
     )
   }
 
-  const handleSubmit = () => {
-    onComplete(selectedInterests)
+  const handleContinue = () => {
+    setInterests(selectedInterests)
     navigate('/welcome-home')
   }
 
-  const handleSkip = () => {
-    onComplete([])
-    navigate('/welcome-home')
-  }
+  const canContinue = selectedInterests.length >= 3
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-purple-50 px-6 py-12">
+    <div className="flex flex-col min-h-screen bg-white px-6 py-8">
+      {/* Header */}
+      <button
+        onClick={() => navigate('/signup')}
+        className="p-2 -ml-2 hover:bg-gray-100 rounded-full transition-colors w-fit"
+      >
+        <ArrowLeft className="w-6 h-6" />
+      </button>
+
       <motion.div
-        className="max-w-md mx-auto"
+        className="flex-1 flex flex-col max-w-md mx-auto w-full pt-8"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
       >
         <h1 className="text-3xl font-bold mb-2">What interests you?</h1>
-        <p className="text-gray-600 mb-8">
-          Select topics you'd like to explore. This helps us personalize your
-          experience.
+        <p className="text-gray-500 mb-8">
+          Select at least 3 topics to personalize your experience
         </p>
 
-        <div className="grid grid-cols-3 gap-3 mb-8">
-          {InterestOptions.map((interest, index) => (
-            <motion.button
-              key={interest}
-              onClick={() => toggleInterest(interest)}
-              className={cn(
-                'py-3 px-4 rounded-xl text-sm font-medium transition-all duration-200',
-                selectedInterests.includes(interest)
-                  ? 'bg-purple-600 text-white shadow-lg shadow-purple-200'
-                  : 'bg-white text-gray-700 border border-gray-200 hover:border-purple-300'
-              )}
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: index * 0.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              {interest}
-            </motion.button>
-          ))}
+        {/* Interest Grid */}
+        <div className="grid grid-cols-2 gap-3 flex-1">
+          {INTERESTS.map((interest) => {
+            const isSelected = selectedInterests.includes(interest.id)
+            return (
+              <motion.button
+                key={interest.id}
+                onClick={() => toggleInterest(interest.id)}
+                whileTap={{ scale: 0.95 }}
+                className={`p-4 rounded-2xl border-2 transition-all flex flex-col items-center gap-2 ${
+                  isSelected
+                    ? 'border-black bg-black text-white'
+                    : 'border-gray-200 hover:border-gray-300'
+                }`}
+              >
+                <span className="text-2xl">{interest.emoji}</span>
+                <span className="text-sm font-medium">{interest.label}</span>
+                <AnimatePresence>
+                  {isSelected && (
+                    <motion.div
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      exit={{ scale: 0 }}
+                      className="absolute top-2 right-2"
+                    >
+                      <Check className="w-4 h-4" />
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </motion.button>
+            )
+          })}
         </div>
 
-        <div className="space-y-3">
-          <Button
-            onClick={handleSubmit}
-            className="w-full"
-            size="lg"
-            disabled={selectedInterests.length === 0}
+        {/* Continue Button */}
+        <div className="pt-8 pb-4">
+          <button
+            onClick={handleContinue}
+            disabled={!canContinue}
+            className={`w-full py-4 px-6 rounded-full transition-all ${
+              canContinue
+                ? 'bg-black text-white hover:bg-gray-800'
+                : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+            }`}
           >
-            Continue ({selectedInterests.length} selected)
-          </Button>
-
-          <Button
-            onClick={handleSkip}
-            variant="ghost"
-            className="w-full text-gray-500"
-          >
-            Skip for now
-          </Button>
+            CONTINUE ({selectedInterests.length}/3 selected)
+          </button>
         </div>
       </motion.div>
     </div>
   )
 }
-

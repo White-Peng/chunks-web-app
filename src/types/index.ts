@@ -6,18 +6,11 @@ export interface User {
 }
 
 // Content types
-export interface Story {
-  id: number
-  title: string
-  description: string
-  imageUrl: string
-}
-
 export interface Chunk {
   id: number
   title: string
   content: string
-  imageUrl: string
+  imageUrl?: string
 }
 
 export interface QuizQuestion {
@@ -26,6 +19,20 @@ export interface QuizQuestion {
   options: string[]
   correctAnswerIndex: number
   explanation: string
+}
+
+export interface Quiz {
+  questions: QuizQuestion[]
+}
+
+export interface Story {
+  id: number
+  title: string
+  description: string
+  imageUrl: string
+  chunks: Chunk[]
+  quiz: Quiz
+  relatedTopics?: string[]
 }
 
 export interface Article {
@@ -78,4 +85,3 @@ export const ReflectionQuestions = [
   'How could you apply this knowledge in your daily life?',
   'What emotions does this topic evoke for you?',
 ] as const
-

@@ -1,4 +1,4 @@
-import type { Story, Chunk, QuizQuestion, Article, RelatedTopic, DailyGoalOption } from '@/types'
+import type { Story, Chunk, Article, RelatedTopic, DailyGoalOption, Quiz } from '@/types'
 
 // Daily goal options
 export const DailyGoalOptions: DailyGoalOption[] = [
@@ -14,7 +14,119 @@ export const DailyGoalOptions: DailyGoalOption[] = [
   },
 ]
 
-// Sample stories
+// Generate chunks for a story
+function generateChunksFor(title: string, imageUrl: string): Chunk[] {
+  return [
+    {
+      id: 1,
+      title: 'Key Insight #1',
+      content: `Discover the fundamental concepts behind ${title}. This chunk explores the basics and sets the foundation for deeper understanding.`,
+      imageUrl: imageUrl,
+    },
+    {
+      id: 2,
+      title: 'Historical Context',
+      content: `Learn about the evolution and background of ${title}. Understanding the past helps illuminate the present.`,
+      imageUrl: imageUrl,
+    },
+    {
+      id: 3,
+      title: 'Expert Perspective',
+      content: `Industry leaders share their insights on ${title}. Gain valuable knowledge from those at the forefront.`,
+      imageUrl: imageUrl,
+    },
+    {
+      id: 4,
+      title: 'Real-World Application',
+      content: `See how ${title} manifests in everyday life. Practical examples that bring theory to reality.`,
+      imageUrl: imageUrl,
+    },
+    {
+      id: 5,
+      title: 'Future Trends',
+      content: `Explore what's next for ${title}. Predictions and emerging patterns that shape tomorrow.`,
+      imageUrl: imageUrl,
+    },
+    {
+      id: 6,
+      title: 'Deep Dive',
+      content: `An in-depth exploration of the most fascinating aspects of ${title}. For those who want to go further.`,
+      imageUrl: imageUrl,
+    },
+  ]
+}
+
+// Generate quiz questions for a story
+function generateQuizFor(title: string): Quiz {
+  return {
+    questions: [
+      {
+        id: 1,
+        question: `What is a key fundamental concept behind ${title}?`,
+        options: [
+          'Understanding surface-level details only',
+          'Exploring basics and setting a foundation for deeper understanding',
+          'Ignoring historical context',
+          'Focusing only on future predictions',
+        ],
+        correctAnswerIndex: 1,
+        explanation:
+          'The first chunk emphasized learning the fundamentals to support deeper exploration.',
+      },
+      {
+        id: 2,
+        question: `Why is historical context important for ${title}?`,
+        options: [
+          'It is not important at all',
+          'It only matters for academic purposes',
+          'Understanding the past helps illuminate the present',
+          'History has no connection to current topics',
+        ],
+        correctAnswerIndex: 2,
+        explanation: 'Knowing how the topic evolved clarifies why it matters today.',
+      },
+      {
+        id: 3,
+        question: `What do expert perspectives provide regarding ${title}?`,
+        options: [
+          'Only theoretical knowledge',
+          'Valuable insights from people at the forefront',
+          'Outdated information',
+          'Unverified opinions',
+        ],
+        correctAnswerIndex: 1,
+        explanation: 'Experts share lived experience and forward-looking opinions.',
+      },
+      {
+        id: 4,
+        question: 'How does real-world application enhance understanding?',
+        options: [
+          'It makes topics more confusing',
+          'It is irrelevant to learning',
+          'It brings theory to reality through practical examples',
+          'It only applies to specific industries',
+        ],
+        correctAnswerIndex: 2,
+        explanation:
+          'Seeing an idea in practice helps connect abstract concepts to daily life.',
+      },
+      {
+        id: 5,
+        question: `What is valuable about exploring future trends in ${title}?`,
+        options: [
+          'Nothing, only the past matters',
+          'Understanding predictions and emerging patterns that shape tomorrow',
+          'Future trends are always wrong',
+          'It creates unnecessary speculation',
+        ],
+        correctAnswerIndex: 1,
+        explanation: 'Trends indicate where the topic may head next so you can prepare.',
+      },
+    ]
+  }
+}
+
+// Sample stories with chunks and quiz
 export const SampleStories: Story[] = [
   {
     id: 1,
@@ -23,6 +135,9 @@ export const SampleStories: Story[] = [
       'Explore the cutting-edge developments in artificial intelligence and how they are shaping our world.',
     imageUrl:
       'https://images.unsplash.com/photo-1568952433726-3896e3881c65?auto=format&fit=crop&w=1080&q=80',
+    chunks: generateChunksFor('The Future of AI', 'https://images.unsplash.com/photo-1568952433726-3896e3881c65?auto=format&fit=crop&w=1080&q=80'),
+    quiz: generateQuizFor('The Future of AI'),
+    relatedTopics: ['Machine Learning', 'Neural Networks', 'Deep Learning', 'Automation'],
   },
   {
     id: 2,
@@ -31,6 +146,9 @@ export const SampleStories: Story[] = [
       'Discover breathtaking destinations, local cultures, and unforgettable experiences across Southeast Asia.',
     imageUrl:
       'https://images.unsplash.com/photo-1528543606781-2f6e6857f318?auto=format&fit=crop&w=1080&q=80',
+    chunks: generateChunksFor('Hidden Gems of Southeast Asia', 'https://images.unsplash.com/photo-1528543606781-2f6e6857f318?auto=format&fit=crop&w=1080&q=80'),
+    quiz: generateQuizFor('Hidden Gems of Southeast Asia'),
+    relatedTopics: ['Travel Tips', 'Cultural Experiences', 'Local Cuisine', 'Adventure'],
   },
   {
     id: 3,
@@ -39,6 +157,9 @@ export const SampleStories: Story[] = [
       'Explore culinary innovations and food trends that are revolutionizing how we eat.',
     imageUrl:
       'https://images.unsplash.com/photo-1473093295043-cdd812d0e601?auto=format&fit=crop&w=1080&q=80',
+    chunks: generateChunksFor('The Art of Modern Cuisine', 'https://images.unsplash.com/photo-1473093295043-cdd812d0e601?auto=format&fit=crop&w=1080&q=80'),
+    quiz: generateQuizFor('The Art of Modern Cuisine'),
+    relatedTopics: ['Molecular Gastronomy', 'Food Science', 'Sustainable Cooking', 'Chef Techniques'],
   },
   {
     id: 4,
@@ -47,6 +168,9 @@ export const SampleStories: Story[] = [
       'Learn about emerging artists and the sounds that define our generation.',
     imageUrl:
       'https://images.unsplash.com/photo-1524368535928-5b5e00ddc76b?auto=format&fit=crop&w=1080&q=80',
+    chunks: generateChunksFor('Music That Moves Us', 'https://images.unsplash.com/photo-1524368535928-5b5e00ddc76b?auto=format&fit=crop&w=1080&q=80'),
+    quiz: generateQuizFor('Music That Moves Us'),
+    relatedTopics: ['Music Production', 'Genre Evolution', 'Concert Culture', 'Streaming Era'],
   },
   {
     id: 5,
@@ -55,118 +179,11 @@ export const SampleStories: Story[] = [
       'Explore the vibrant world of contemporary art and digital installations.',
     imageUrl:
       'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1080&q=80',
+    chunks: generateChunksFor('Abstract Expressions', 'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1080&q=80'),
+    quiz: generateQuizFor('Abstract Expressions'),
+    relatedTopics: ['Digital Art', 'NFTs', 'Gallery Scene', 'Art History'],
   },
 ]
-
-// Generate chunks for a story
-export function generateChunksFor(story: Story): Chunk[] {
-  return [
-    {
-      id: 1,
-      title: 'Key Insight #1',
-      content: `Discover the fundamental concepts behind ${story.title}. This chunk explores the basics and sets the foundation for deeper understanding.`,
-      imageUrl: story.imageUrl,
-    },
-    {
-      id: 2,
-      title: 'Historical Context',
-      content: `Learn about the evolution and background of ${story.title}. Understanding the past helps illuminate the present.`,
-      imageUrl: story.imageUrl,
-    },
-    {
-      id: 3,
-      title: 'Expert Perspective',
-      content: `Industry leaders share their insights on ${story.title}. Gain valuable knowledge from those at the forefront.`,
-      imageUrl: story.imageUrl,
-    },
-    {
-      id: 4,
-      title: 'Real-World Application',
-      content: `See how ${story.title} manifests in everyday life. Practical examples that bring theory to reality.`,
-      imageUrl: story.imageUrl,
-    },
-    {
-      id: 5,
-      title: 'Future Trends',
-      content: `Explore what's next for ${story.title}. Predictions and emerging patterns that shape tomorrow.`,
-      imageUrl: story.imageUrl,
-    },
-    {
-      id: 6,
-      title: 'Deep Dive',
-      content: `An in-depth exploration of the most fascinating aspects of ${story.title}. For those who want to go further.`,
-      imageUrl: story.imageUrl,
-    },
-  ]
-}
-
-// Generate quiz questions for a story
-export function generateQuizQuestions(story: Story): QuizQuestion[] {
-  return [
-    {
-      id: 1,
-      question: `What is a key fundamental concept behind ${story.title}?`,
-      options: [
-        'Understanding surface-level details only',
-        'Exploring basics and setting a foundation for deeper understanding',
-        'Ignoring historical context',
-        'Focusing only on future predictions',
-      ],
-      correctAnswerIndex: 1,
-      explanation:
-        'The first chunk emphasized learning the fundamentals to support deeper exploration.',
-    },
-    {
-      id: 2,
-      question: `Why is historical context important for ${story.title}?`,
-      options: [
-        'It is not important at all',
-        'It only matters for academic purposes',
-        'Understanding the past helps illuminate the present',
-        'History has no connection to current topics',
-      ],
-      correctAnswerIndex: 2,
-      explanation: 'Knowing how the topic evolved clarifies why it matters today.',
-    },
-    {
-      id: 3,
-      question: `What do expert perspectives provide regarding ${story.title}?`,
-      options: [
-        'Only theoretical knowledge',
-        'Valuable insights from people at the forefront',
-        'Outdated information',
-        'Unverified opinions',
-      ],
-      correctAnswerIndex: 1,
-      explanation: 'Experts share lived experience and forward-looking opinions.',
-    },
-    {
-      id: 4,
-      question: 'How does real-world application enhance understanding?',
-      options: [
-        'It makes topics more confusing',
-        'It is irrelevant to learning',
-        'It brings theory to reality through practical examples',
-        'It only applies to specific industries',
-      ],
-      correctAnswerIndex: 2,
-      explanation:
-        'Seeing an idea in practice helps connect abstract concepts to daily life.',
-    },
-    {
-      id: 5,
-      question: `What is valuable about exploring future trends in ${story.title}?`,
-      options: [
-        'Nothing, only the past matters',
-        'Understanding predictions and emerging patterns that shape tomorrow',
-        'Future trends are always wrong',
-        'It creates unnecessary speculation',
-      ],
-      correctAnswerIndex: 1,
-      explanation: 'Trends indicate where the topic may head next so you can prepare.',
-    },
-  ]
-}
 
 // Generate articles for a story
 export function generateArticles(story: Story): Article[] {
@@ -248,4 +265,3 @@ export function generateRelatedTopics(story: Story): RelatedTopic[] {
     },
   ]
 }
-

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, useMotionValue, useTransform, type PanInfo } from 'motion/react'
 import { ArrowLeft } from 'lucide-react'
@@ -12,22 +12,31 @@ interface StoriesPageProps {
 export function StoriesPage({ onSelectStory }: StoriesPageProps) {
   const navigate = useNavigate()
   const [currentIndex, setCurrentIndex] = useState(0)
-  const [stories, setStories] = useState(SampleStories)
+  const [stories] = useState(SampleStories)
 
   const y = useMotionValue(0)
   const opacity = useTransform(y, [-300, 0, 300], [0.5, 1, 0.5])
+
+  // Reset to first unconsumed story when returning to this page
+  useEffect(() => {
+    const consumedStories = JSON.parse(localStorage.getItem('consumedStories') || '[]')
+    const firstUnconsumedIndex = stories.findIndex(story => !consumedStories.includes(story.id))
+    if (firstUnconsumedIndex !== -1) {
+      setCurrentIndex(firstUnconsumedIndex)
+    } else {
+      localStorage.setItem('consumedStories', JSON.stringify([]))
+      setCurrentIndex(0)
+    }
+  }, [stories])
 
   const handleDragEnd = (_event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
     const swipeThreshold = 100
 
     // Vertical swipe
     if (Math.abs(info.offset.y) > Math.abs(info.offset.x)) {
-      if (info.offset.y > swipeThreshold) {
-        // Swipe down - Skip/Not interested
-        dismissStory()
-      } else if (info.offset.y < -swipeThreshold) {
-        // Swipe up - Interested/Read more
-        navigateToReflection()
+      if (info.offset.y < -swipeThreshold) {
+        // Swipe up - Interested/Dive into topic
+        navigateToChunks()
       }
     }
     // Horizontal swipe
@@ -42,21 +51,10 @@ export function StoriesPage({ onSelectStory }: StoriesPageProps) {
     }
   }
 
-  const dismissStory = () => {
-    const newStories = stories.filter((_, index) => index !== currentIndex)
-    setStories(newStories)
-
-    if (newStories.length === 0) {
-      navigate('/daily-goal')
-    } else if (currentIndex >= newStories.length) {
-      setCurrentIndex(newStories.length - 1)
-    }
-  }
-
-  const navigateToReflection = () => {
+  const navigateToChunks = () => {
     const story = stories[currentIndex]
     onSelectStory(story)
-    navigate('/reflection')
+    navigate('/chunks')
   }
 
   const currentStory = stories[currentIndex]
@@ -68,14 +66,14 @@ export function StoriesPage({ onSelectStory }: StoriesPageProps) {
   return (
     <div className="fixed inset-0 bg-black overflow-hidden">
       {/* Header */}
-      <div className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between px-4 py-4 bg-gradient-to-b from-black/60 to-transparent">
+      <div className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between px-4 py-4 bg-black/50">
         <button
           onClick={() => navigate('/daily-goal')}
           className="p-2 hover:bg-white/10 rounded-full transition-colors"
         >
           <ArrowLeft className="w-6 h-6 text-white" />
         </button>
-        <h2 className="text-white font-medium">Discover Stories</h2>
+        <h2 className="text-white font-medium">Stories</h2>
         <div className="w-10"></div>
       </div>
 
@@ -105,11 +103,11 @@ export function StoriesPage({ onSelectStory }: StoriesPageProps) {
           className="absolute inset-0 bg-cover bg-center"
           style={{ backgroundImage: `url(${currentStory.imageUrl})` }}
         >
-          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/30 to-black/80"></div>
+          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/30 to-black/70"></div>
         </div>
 
         {/* Content */}
-        <div className="absolute bottom-0 left-0 right-0 p-8 pb-24">
+        <div className="absolute bottom-0 left-0 right-0 p-8 pb-16">
           <motion.div
             key={currentStory.id}
             initial={{ opacity: 0, y: 20 }}
@@ -127,17 +125,9 @@ export function StoriesPage({ onSelectStory }: StoriesPageProps) {
       </motion.div>
 
       {/* Swipe Hints */}
-      <div className="absolute bottom-6 left-0 right-0 flex justify-center gap-8 text-white/50 text-sm pointer-events-none z-10">
-        <div className="text-center flex flex-col items-center">
-          <span className="text-2xl mb-1">↓</span>
-          <span>Skip</span>
-        </div>
-        <div className="text-center flex flex-col items-center">
-          <span className="text-2xl mb-1">↑</span>
-          <span>Read</span>
-        </div>
+      <div className="absolute bottom-4 left-0 right-0 flex justify-center text-white/50 text-sm pointer-events-none z-10">
+        <div className="text-center">↑ Swipe up to dive in</div>
       </div>
     </div>
   )
 }
-

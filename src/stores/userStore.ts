@@ -12,9 +12,9 @@ const STORAGE_KEYS = {
 // Custom hook for user state management
 export function useUserStore() {
   const [user, setUser] = useState<User | null>(null)
-  const [interests, setInterests] = useState<Interest[]>([])
-  const [currentStory, setCurrentStory] = useState<Story | null>(null)
-  const [dailyGoal, setDailyGoal] = useState<DailyGoal | null>(null)
+  const [interests, setInterestsState] = useState<Interest[]>([])
+  const [currentStory, setCurrentStoryState] = useState<Story | null>(null)
+  const [dailyGoal, setDailyGoalState] = useState<DailyGoal | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
   // Load state from localStorage on mount
@@ -26,9 +26,9 @@ export function useUserStore() {
       const storedGoal = localStorage.getItem(STORAGE_KEYS.DAILY_GOAL)
 
       if (storedUser) setUser(JSON.parse(storedUser))
-      if (storedInterests) setInterests(JSON.parse(storedInterests))
-      if (storedStory) setCurrentStory(JSON.parse(storedStory))
-      if (storedGoal) setDailyGoal(storedGoal as DailyGoal)
+      if (storedInterests) setInterestsState(JSON.parse(storedInterests))
+      if (storedStory) setCurrentStoryState(JSON.parse(storedStory))
+      if (storedGoal) setDailyGoalState(storedGoal as DailyGoal)
     } catch (error) {
       console.error('Failed to load user state:', error)
     } finally {
@@ -37,7 +37,7 @@ export function useUserStore() {
   }, [])
 
   // Sign up
-  const signUp = useCallback((email: string, _password: string, name: string) => {
+  const signup = useCallback((email: string, _password: string, name: string) => {
     const newUser: User = {
       email,
       name,
@@ -58,53 +58,66 @@ export function useUserStore() {
     localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(existingUser))
   }, [])
 
+  // Set interests
+  const setInterests = useCallback((newInterests: string[]) => {
+    setInterestsState(newInterests as Interest[])
+    localStorage.setItem(STORAGE_KEYS.INTERESTS, JSON.stringify(newInterests))
+    
+    // Also mark onboarding as complete
+    if (user) {
+      const updatedUser = { ...user, hasCompletedOnboarding: true }
+      setUser(updatedUser)
+      localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(updatedUser))
+    }
+  }, [user])
+
   // Complete onboarding
   const completeOnboarding = useCallback((selectedInterests: Interest[]) => {
     if (!user) return
 
     const updatedUser = { ...user, hasCompletedOnboarding: true }
     setUser(updatedUser)
-    setInterests(selectedInterests)
+    setInterestsState(selectedInterests)
     localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(updatedUser))
     localStorage.setItem(STORAGE_KEYS.INTERESTS, JSON.stringify(selectedInterests))
   }, [user])
 
   // Update interests
   const updateInterests = useCallback((newInterests: Interest[]) => {
-    setInterests(newInterests)
+    setInterestsState(newInterests)
     localStorage.setItem(STORAGE_KEYS.INTERESTS, JSON.stringify(newInterests))
   }, [])
 
   // Select daily goal
-  const selectDailyGoal = useCallback((goal: DailyGoal) => {
-    setDailyGoal(goal)
+  const setDailyGoal = useCallback((goal: DailyGoal) => {
+    setDailyGoalState(goal)
     localStorage.setItem(STORAGE_KEYS.DAILY_GOAL, goal)
   }, [])
 
   // Select story
-  const selectStory = useCallback((story: Story) => {
-    setCurrentStory(story)
+  const setCurrentStory = useCallback((story: Story) => {
+    setCurrentStoryState(story)
     localStorage.setItem(STORAGE_KEYS.CURRENT_STORY, JSON.stringify(story))
   }, [])
 
   // Clear current story
   const clearCurrentStory = useCallback(() => {
-    setCurrentStory(null)
+    setCurrentStoryState(null)
     localStorage.removeItem(STORAGE_KEYS.CURRENT_STORY)
   }, [])
 
   // Reset goal
   const resetGoal = useCallback(() => {
-    setDailyGoal(null)
+    setDailyGoalState(null)
     localStorage.removeItem(STORAGE_KEYS.DAILY_GOAL)
   }, [])
 
   // Logout
   const logout = useCallback(() => {
     setUser(null)
-    setInterests([])
-    setCurrentStory(null)
-    setDailyGoal(null)
+    setInterestsState([])
+    setCurrentStoryState(null)
+    setDailyGoalState(null)
     Object.values(STORAGE_KEYS).forEach(key => localStorage.removeItem(key))
   }, [])
 
@@ -118,18 +131,23 @@ export function useUserStore() {
     isAuthenticated: !!user,
 
     // Actions
-    signUp,
+    signup,
     login,
     logout,
+    setInterests,
     completeOnboarding,
     updateInterests,
-    selectDailyGoal,
-    selectStory,
+    setDailyGoal,
+    setCurrentStory,
     clearCurrentStory,
     resetGoal,
+    
+    // Aliases for backward compatibility
+    signUp: signup,
+    selectDailyGoal: setDailyGoal,
+    selectStory: setCurrentStory,
   }
 }
 
 // Type for the store
 export type UserStore = ReturnType<typeof useUserStore>
-

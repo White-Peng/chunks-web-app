@@ -1,97 +1,111 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Button } from '@/components/ui/button'
-import { ArrowLeft, RefreshCw } from 'lucide-react'
-import { motion, AnimatePresence } from 'motion/react'
-import { ReflectionQuestions, type Story } from '@/types'
+import { motion } from 'motion/react'
+import { ArrowLeft, X } from 'lucide-react'
+import { useUserStore } from '@/stores/userStore'
 
-interface ReflectionPageProps {
-  story: Story | null
-}
-
-export function ReflectionPage({ story }: ReflectionPageProps) {
+export function ReflectionPage() {
   const navigate = useNavigate()
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
+  const { currentStory } = useUserStore()
+  const [reflection, setReflection] = useState('')
 
-  if (!story) {
-    navigate('/stories')
-    return null
+  const handleSave = () => {
+    // Save reflection to localStorage
+    if (currentStory && reflection.trim()) {
+      const reflections = JSON.parse(localStorage.getItem('reflections') || '{}')
+      reflections[currentStory.id] = {
+        text: reflection,
+        timestamp: new Date().toISOString(),
+      }
+      localStorage.setItem('reflections', JSON.stringify(reflections))
+    }
+    navigate('/quiz')
   }
 
-  const currentQuestion = ReflectionQuestions[currentQuestionIndex]
-
-  const shuffleQuestion = () => {
-    let newIndex
-    do {
-      newIndex = Math.floor(Math.random() * ReflectionQuestions.length)
-    } while (newIndex === currentQuestionIndex && ReflectionQuestions.length > 1)
-    setCurrentQuestionIndex(newIndex)
+  const handleSkip = () => {
+    navigate('/quiz')
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-purple-800 to-indigo-900">
+    <div className="flex flex-col min-h-screen bg-white">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-4">
         <button
-          onClick={() => navigate('/stories')}
-          className="p-2 hover:bg-white/10 rounded-full transition-colors"
+          onClick={() => navigate('/chunks')}
+          className="p-2 -ml-2 hover:bg-gray-100 rounded-full transition-colors"
         >
-          <ArrowLeft className="w-6 h-6 text-white" />
+          <ArrowLeft className="w-6 h-6" />
         </button>
-        <h2 className="text-white font-medium">Reflection</h2>
-        <div className="w-10"></div>
+        
+        <h2 className="font-medium">Reflection</h2>
+        
+        <button
+          onClick={handleSkip}
+          className="p-2 -mr-2 hover:bg-gray-100 rounded-full transition-colors"
+        >
+          <X className="w-6 h-6" />
+        </button>
       </div>
 
-      <div className="flex flex-col items-center justify-center min-h-[80vh] px-6">
-        <motion.div
-          className="max-w-md text-center"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
+      {/* Content */}
+      <motion.div 
+        className="flex-1 flex flex-col px-6 py-8"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+      >
+        <h1 className="text-2xl font-bold mb-4">
+          What stood out to you?
+        </h1>
+        <p className="text-gray-500 mb-8">
+          Take a moment to reflect on what you just learned about "{currentStory?.title}".
+        </p>
+
+        {/* Textarea */}
+        <textarea
+          value={reflection}
+          onChange={(e) => setReflection(e.target.value)}
+          placeholder="Write your thoughts here..."
+          className="flex-1 min-h-[200px] p-4 bg-gray-50 rounded-2xl resize-none focus:outline-none focus:ring-2 focus:ring-black/10 text-lg"
+        />
+
+        {/* Prompts */}
+        <div className="mt-6 space-y-2">
+          <p className="text-sm text-gray-400">Prompts to consider:</p>
+          <div className="flex flex-wrap gap-2">
+            {['What surprised me?', 'How does this connect?', 'What questions do I have?'].map((prompt) => (
+              <button
+                key={prompt}
+                onClick={() => setReflection((prev) => prev + (prev ? '\n\n' : '') + prompt + ' ')}
+                className="px-3 py-1.5 bg-gray-100 rounded-full text-sm text-gray-600 hover:bg-gray-200 transition-colors"
+              >
+                {prompt}
+              </button>
+            ))}
+          </div>
+        </div>
+      </motion.div>
+
+      {/* Footer */}
+      <div className="p-6 space-y-3">
+        <button
+          onClick={handleSave}
+          disabled={!reflection.trim()}
+          className={`w-full py-4 px-6 rounded-full transition-all ${
+            reflection.trim()
+              ? 'bg-black text-white hover:bg-gray-800'
+              : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+          }`}
         >
-          {/* Story Context */}
-          <p className="text-purple-300 text-sm uppercase tracking-wider mb-2">
-            Reflecting on
-          </p>
-          <h3 className="text-white text-xl font-semibold mb-12">{story.title}</h3>
-
-          {/* Question */}
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={currentQuestionIndex}
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              transition={{ duration: 0.3 }}
-              className="mb-12"
-            >
-              <p className="text-white text-2xl font-light leading-relaxed">
-                "{currentQuestion}"
-              </p>
-            </motion.div>
-          </AnimatePresence>
-
-          {/* Shuffle Button */}
-          <motion.button
-            onClick={shuffleQuestion}
-            className="flex items-center gap-2 mx-auto text-purple-300 hover:text-white transition-colors mb-12"
-            whileTap={{ scale: 0.95 }}
-          >
-            <RefreshCw className="w-5 h-5" />
-            <span>Different question</span>
-          </motion.button>
-
-          {/* Continue Button */}
-          <Button
-            onClick={() => navigate('/chunks')}
-            size="lg"
-            className="bg-white text-purple-900 hover:bg-purple-100 px-12"
-          >
-            Continue to Chunks
-          </Button>
-        </motion.div>
+          Save & Continue
+        </button>
+        
+        <button
+          onClick={handleSkip}
+          className="w-full py-4 px-6 text-gray-500 hover:text-black transition-colors"
+        >
+          Skip for now
+        </button>
       </div>
     </div>
   )
 }
-

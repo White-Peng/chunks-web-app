@@ -1,100 +1,97 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Button } from '@/components/ui/button'
-import { Progress } from '@/components/ui/progress'
-import { ArrowLeft, CheckCircle, XCircle } from 'lucide-react'
 import { motion, AnimatePresence } from 'motion/react'
-import { generateQuizQuestions } from '@/data/content'
-import type { Story, QuizQuestion } from '@/types'
-import { cn } from '@/lib/utils'
+import { ArrowLeft, Check, X } from 'lucide-react'
+import { useUserStore } from '@/stores/userStore'
 
-interface QuizPageProps {
-  story: Story | null
-}
-
-export function QuizPage({ story }: QuizPageProps) {
+export function QuizPage() {
   const navigate = useNavigate()
-  const [questions, setQuestions] = useState<QuizQuestion[]>([])
-  const [currentIndex, setCurrentIndex] = useState(0)
+  const { currentStory } = useUserStore()
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null)
   const [showResult, setShowResult] = useState(false)
   const [score, setScore] = useState(0)
-  const [isComplete, setIsComplete] = useState(false)
 
-  useEffect(() => {
-    if (story) {
-      setQuestions(generateQuizQuestions(story))
-    } else {
-      navigate('/actions')
-    }
-  }, [story, navigate])
+  if (!currentStory) {
+    navigate('/stories')
+    return null
+  }
 
-  if (!story || questions.length === 0) return null
-
-  const currentQuestion = questions[currentIndex]
-  const progress = ((currentIndex + 1) / questions.length) * 100
+  const questions = currentStory.quiz.questions
+  const currentQuestion = questions[currentQuestionIndex]
+  const progress = ((currentQuestionIndex + 1) / questions.length) * 100
 
   const handleSelectAnswer = (index: number) => {
-    if (showResult) return
+    if (selectedAnswer !== null) return
     setSelectedAnswer(index)
-  }
-
-  const handleSubmit = () => {
-    if (selectedAnswer === null) return
-
-    setShowResult(true)
-    if (selectedAnswer === currentQuestion.correctAnswerIndex) {
-      setScore((prev) => prev + 1)
+    
+    if (index === currentQuestion.correctAnswerIndex) {
+      setScore(score + 1)
     }
+
+    // Auto-advance after delay
+    setTimeout(() => {
+      if (currentQuestionIndex < questions.length - 1) {
+        setCurrentQuestionIndex(currentQuestionIndex + 1)
+        setSelectedAnswer(null)
+      } else {
+        setShowResult(true)
+      }
+    }, 1500)
   }
 
-  const handleNext = () => {
-    if (currentIndex < questions.length - 1) {
-      setCurrentIndex((prev) => prev + 1)
-      setSelectedAnswer(null)
-      setShowResult(false)
-    } else {
-      setIsComplete(true)
-    }
+  const handleContinue = () => {
+    navigate('/actions')
   }
 
-  if (isComplete) {
+  const handleRetry = () => {
+    setCurrentQuestionIndex(0)
+    setSelectedAnswer(null)
+    setShowResult(false)
+    setScore(0)
+  }
+
+  if (showResult) {
     const percentage = Math.round((score / questions.length) * 100)
+    const isPassing = percentage >= 70
+
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-green-50 flex items-center justify-center px-6">
+      <div className="flex flex-col items-center justify-center min-h-screen bg-white px-8">
         <motion.div
-          className="text-center max-w-md"
-          initial={{ scale: 0.8, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ type: 'spring' }}
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+          className="text-center"
         >
-          <div className="text-6xl mb-6">🎉</div>
-          <h1 className="text-3xl font-bold mb-2">Quiz Complete!</h1>
-          <p className="text-gray-600 mb-8">
-            You scored {score} out of {questions.length} ({percentage}%)
+          <div className={`w-32 h-32 mx-auto rounded-full flex items-center justify-center mb-8 ${
+            isPassing ? 'bg-green-100' : 'bg-orange-100'
+          }`}>
+            <span className="text-5xl font-bold">{percentage}%</span>
+          </div>
+          
+          <h1 className="text-3xl font-bold mb-4">
+            {isPassing ? 'Great Job! 🎉' : 'Keep Learning! 📚'}
+          </h1>
+          
+          <p className="text-gray-500 mb-8">
+            You got {score} out of {questions.length} questions correct
           </p>
 
-          <div className="space-y-3">
-            <Button
-              onClick={() => navigate('/actions')}
-              className="w-full"
-              size="lg"
+          <div className="space-y-4">
+            <button
+              onClick={handleContinue}
+              className="w-full py-4 px-6 bg-black text-white rounded-full hover:bg-gray-800 transition-colors"
             >
               Continue
-            </Button>
-            <Button
-              onClick={() => {
-                setCurrentIndex(0)
-                setSelectedAnswer(null)
-                setShowResult(false)
-                setScore(0)
-                setIsComplete(false)
-              }}
-              variant="outline"
-              className="w-full"
-            >
-              Try Again
-            </Button>
+            </button>
+            
+            {!isPassing && (
+              <button
+                onClick={handleRetry}
+                className="w-full py-4 px-6 border-2 border-black rounded-full hover:bg-gray-50 transition-colors"
+              >
+                Try Again
+              </button>
+            )}
           </div>
         </motion.div>
       </div>
@@ -102,119 +99,94 @@ export function QuizPage({ story }: QuizPageProps) {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-green-50">
+    <div className="flex flex-col min-h-screen bg-white">
       {/* Header */}
-      <div className="flex items-center gap-3 px-4 py-4 bg-white border-b">
+      <div className="flex items-center justify-between px-4 py-4">
         <button
-          onClick={() => navigate('/actions')}
-          className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+          onClick={() => navigate('/chunks')}
+          className="p-2 -ml-2 hover:bg-gray-100 rounded-full transition-colors"
         >
           <ArrowLeft className="w-6 h-6" />
         </button>
-        <div className="flex-1">
-          <h2 className="font-medium">Quiz</h2>
-          <p className="text-xs text-gray-500">
-            Question {currentIndex + 1} of {questions.length}
-          </p>
+        
+        {/* Progress Bar */}
+        <div className="flex-1 mx-4 h-1 bg-gray-200 rounded-full overflow-hidden">
+          <motion.div
+            className="h-full bg-black"
+            animate={{ width: `${progress}%` }}
+            transition={{ duration: 0.3 }}
+          />
         </div>
-      </div>
-
-      {/* Progress */}
-      <div className="px-6 py-4">
-        <Progress value={progress} className="h-2" />
+        
+        <span className="text-sm text-gray-500">
+          {currentQuestionIndex + 1}/{questions.length}
+        </span>
       </div>
 
       {/* Question */}
-      <div className="px-6 py-8">
+      <div className="flex-1 flex flex-col px-6 py-8">
         <AnimatePresence mode="wait">
           <motion.div
-            key={currentIndex}
+            key={currentQuestionIndex}
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -20 }}
+            className="flex-1"
           >
-            <h1 className="text-xl font-semibold mb-8">
+            <h2 className="text-2xl font-bold mb-8">
               {currentQuestion.question}
-            </h1>
+            </h2>
 
+            {/* Options */}
             <div className="space-y-3">
               {currentQuestion.options.map((option, index) => {
                 const isSelected = selectedAnswer === index
                 const isCorrect = index === currentQuestion.correctAnswerIndex
-                const showCorrect = showResult && isCorrect
-                const showWrong = showResult && isSelected && !isCorrect
+                const showFeedback = selectedAnswer !== null
+
+                let buttonStyle = 'border-2 border-gray-200'
+                if (showFeedback && isCorrect) {
+                  buttonStyle = 'border-2 border-green-500 bg-green-50'
+                } else if (showFeedback && isSelected && !isCorrect) {
+                  buttonStyle = 'border-2 border-red-500 bg-red-50'
+                } else if (isSelected) {
+                  buttonStyle = 'border-2 border-black'
+                }
 
                 return (
-                  <motion.button
+                  <button
                     key={index}
                     onClick={() => handleSelectAnswer(index)}
-                    className={cn(
-                      'w-full p-4 rounded-xl text-left transition-all duration-200 border-2',
-                      isSelected && !showResult
-                        ? 'border-purple-500 bg-purple-50'
-                        : 'border-gray-200 bg-white hover:border-gray-300',
-                      showCorrect && 'border-green-500 bg-green-50',
-                      showWrong && 'border-red-500 bg-red-50'
-                    )}
-                    whileTap={{ scale: showResult ? 1 : 0.98 }}
+                    disabled={selectedAnswer !== null}
+                    className={`w-full py-4 px-6 rounded-2xl text-left transition-all flex items-center justify-between ${buttonStyle}`}
                   >
-                    <div className="flex items-center gap-3">
-                      <div
-                        className={cn(
-                          'w-6 h-6 rounded-full border-2 flex items-center justify-center',
-                          isSelected && !showResult
-                            ? 'border-purple-500'
-                            : 'border-gray-300',
-                          showCorrect && 'border-green-500 bg-green-500',
-                          showWrong && 'border-red-500 bg-red-500'
-                        )}
-                      >
-                        {showCorrect && (
-                          <CheckCircle className="w-4 h-4 text-white" />
-                        )}
-                        {showWrong && <XCircle className="w-4 h-4 text-white" />}
-                      </div>
-                      <span className="flex-1">{option}</span>
-                    </div>
-                  </motion.button>
+                    <span>{option}</span>
+                    {showFeedback && isCorrect && (
+                      <Check className="w-5 h-5 text-green-500" />
+                    )}
+                    {showFeedback && isSelected && !isCorrect && (
+                      <X className="w-5 h-5 text-red-500" />
+                    )}
+                  </button>
                 )
               })}
             </div>
 
             {/* Explanation */}
-            {showResult && (
+            {selectedAnswer !== null && (
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="mt-6 p-4 bg-blue-50 rounded-xl"
+                className="mt-6 p-4 bg-gray-50 rounded-2xl"
               >
-                <p className="text-sm text-blue-800">
-                  <strong>Explanation:</strong> {currentQuestion.explanation}
+                <p className="text-sm text-gray-600">
+                  {currentQuestion.explanation}
                 </p>
               </motion.div>
             )}
           </motion.div>
         </AnimatePresence>
       </div>
-
-      {/* Actions */}
-      <div className="fixed bottom-0 left-0 right-0 p-6 bg-white border-t">
-        {!showResult ? (
-          <Button
-            onClick={handleSubmit}
-            className="w-full"
-            size="lg"
-            disabled={selectedAnswer === null}
-          >
-            Check Answer
-          </Button>
-        ) : (
-          <Button onClick={handleNext} className="w-full" size="lg">
-            {currentIndex < questions.length - 1 ? 'Next Question' : 'See Results'}
-          </Button>
-        )}
-      </div>
     </div>
   )
 }
-

@@ -1,132 +1,242 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { ArrowLeft, Send, Bot, User } from 'lucide-react'
 import { motion, AnimatePresence } from 'motion/react'
-import type { Story } from '@/types'
+import { ArrowLeft, Send, ChevronDown } from 'lucide-react'
+import { useUserStore } from '@/stores/userStore'
 
 interface Message {
-  id: number
-  text: string
-  isBot: boolean
+  id: string
+  role: 'user' | 'assistant'
+  content: string
+  timestamp: Date
 }
 
-interface ChatbotPageProps {
-  story: Story | null
+interface Reference {
+  id: string
+  title: string
+  source: string
 }
 
-export function ChatbotPage({ story }: ChatbotPageProps) {
+export function ChatbotPage() {
   const navigate = useNavigate()
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: 1,
-      text: `Hi! I'm here to help you explore "${story?.title || 'this topic'}" further. What would you like to know?`,
-      isBot: true,
-    },
-  ])
-  const [input, setInput] = useState('')
+  const { currentStory } = useUserStore()
+  const [messages, setMessages] = useState<Message[]>([])
+  const [inputValue, setInputValue] = useState('')
+  const [isTyping, setIsTyping] = useState(false)
+  const [showReferences, setShowReferences] = useState(false)
+  const messagesEndRef = useRef<HTMLDivElement>(null)
 
-  const handleSend = () => {
-    if (!input.trim()) return
+  // Sample references based on story
+  const references: Reference[] = currentStory ? [
+    { id: '1', title: 'Understanding ' + currentStory.title, source: 'Wikipedia' },
+    { id: '2', title: 'A Deep Dive into the Topic', source: 'Scientific American' },
+    { id: '3', title: 'Further Reading', source: 'Nature Journal' },
+  ] : []
+
+  // Initial greeting
+  useEffect(() => {
+    if (messages.length === 0 && currentStory) {
+      setTimeout(() => {
+        setMessages([
+          {
+            id: '1',
+            role: 'assistant',
+            content: `Great job completing the chunks on "${currentStory.title}"! 🎉 Feel free to ask me any questions about what you've learned.`,
+            timestamp: new Date(),
+          },
+        ])
+      }, 500)
+    }
+  }, [currentStory, messages.length])
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [messages])
+
+  const handleSend = async () => {
+    if (!inputValue.trim()) return
 
     const userMessage: Message = {
-      id: messages.length + 1,
-      text: input,
-      isBot: false,
+      id: Date.now().toString(),
+      role: 'user',
+      content: inputValue.trim(),
+      timestamp: new Date(),
     }
 
     setMessages((prev) => [...prev, userMessage])
-    setInput('')
+    setInputValue('')
+    setIsTyping(true)
 
-    // Simulate bot response
+    // Simulate AI response
     setTimeout(() => {
-      const botResponse: Message = {
-        id: messages.length + 2,
-        text: `That's a great question about ${story?.title || 'this topic'}! Let me think about that... This is a simulated response. In a real app, this would connect to an AI service to provide meaningful answers.`,
-        isBot: true,
+      const aiResponse: Message = {
+        id: (Date.now() + 1).toString(),
+        role: 'assistant',
+        content: generateResponse(userMessage.content),
+        timestamp: new Date(),
       }
-      setMessages((prev) => [...prev, botResponse])
-    }, 1000)
+      setMessages((prev) => [...prev, aiResponse])
+      setIsTyping(false)
+    }, 1500)
+  }
+
+  const generateResponse = (userInput: string): string => {
+    const lowerInput = userInput.toLowerCase()
+    
+    if (lowerInput.includes('what') && lowerInput.includes('learn')) {
+      return `Based on your reading about "${currentStory?.title}", you learned about the key concepts including the main ideas presented in each chunk. Would you like me to summarize any specific part?`
+    }
+    
+    if (lowerInput.includes('explain') || lowerInput.includes('more')) {
+      return `Great question! The topic we explored covers several fascinating aspects. Let me break it down further for you...`
+    }
+    
+    if (lowerInput.includes('quiz') || lowerInput.includes('test')) {
+      return `You can take the quiz anytime! Just head back and select "Take Quiz" to test your knowledge on "${currentStory?.title}".`
+    }
+
+    return `That's an interesting question! Based on what you read about "${currentStory?.title}", I'd say this relates to the broader concepts we covered. Would you like me to elaborate on any specific aspect?`
+  }
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault()
+      handleSend()
+    }
   }
 
   return (
-    <div className="flex flex-col h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+    <div className="flex flex-col min-h-screen bg-white">
       {/* Header */}
-      <div className="flex items-center gap-3 px-4 py-4 bg-white border-b">
+      <div className="flex items-center justify-between px-4 py-4 border-b border-gray-100">
         <button
           onClick={() => navigate('/actions')}
-          className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+          className="p-2 -ml-2 hover:bg-gray-100 rounded-full transition-colors"
         >
           <ArrowLeft className="w-6 h-6" />
         </button>
-        <div className="flex items-center gap-2">
-          <div className="p-2 rounded-full bg-blue-100">
-            <Bot className="w-5 h-5 text-blue-600" />
-          </div>
-          <div>
-            <h2 className="font-medium">AI Assistant</h2>
-            <p className="text-xs text-gray-500">Ask anything about {story?.title}</p>
-          </div>
-        </div>
+        <h2 className="font-medium">Chat with Chunks AI</h2>
+        <div className="w-10"></div>
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div className="flex-1 overflow-y-auto px-4 py-6">
         <AnimatePresence>
           {messages.map((message) => (
             <motion.div
               key={message.id}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              className={`flex gap-3 ${message.isBot ? '' : 'flex-row-reverse'}`}
+              exit={{ opacity: 0 }}
+              className={`mb-4 flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
             >
               <div
-                className={`p-2 rounded-full ${
-                  message.isBot ? 'bg-blue-100' : 'bg-purple-100'
+                className={`max-w-[80%] px-4 py-3 rounded-2xl ${
+                  message.role === 'user'
+                    ? 'bg-black text-white rounded-br-md'
+                    : 'bg-gray-100 text-black rounded-bl-md'
                 }`}
               >
-                {message.isBot ? (
-                  <Bot className="w-5 h-5 text-blue-600" />
-                ) : (
-                  <User className="w-5 h-5 text-purple-600" />
-                )}
-              </div>
-              <div
-                className={`max-w-[75%] p-4 rounded-2xl ${
-                  message.isBot
-                    ? 'bg-white shadow-sm'
-                    : 'bg-purple-600 text-white'
-                }`}
-              >
-                <p className="text-sm">{message.text}</p>
+                <p className="text-sm leading-relaxed">{message.content}</p>
               </div>
             </motion.div>
           ))}
         </AnimatePresence>
+
+        {/* Typing Indicator */}
+        {isTyping && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="flex justify-start mb-4"
+          >
+            <div className="bg-gray-100 px-4 py-3 rounded-2xl rounded-bl-md">
+              <div className="flex gap-1">
+                <motion.div
+                  className="w-2 h-2 bg-gray-400 rounded-full"
+                  animate={{ y: [0, -5, 0] }}
+                  transition={{ repeat: Infinity, duration: 0.6, delay: 0 }}
+                />
+                <motion.div
+                  className="w-2 h-2 bg-gray-400 rounded-full"
+                  animate={{ y: [0, -5, 0] }}
+                  transition={{ repeat: Infinity, duration: 0.6, delay: 0.2 }}
+                />
+                <motion.div
+                  className="w-2 h-2 bg-gray-400 rounded-full"
+                  animate={{ y: [0, -5, 0] }}
+                  transition={{ repeat: Infinity, duration: 0.6, delay: 0.4 }}
+                />
+              </div>
+            </div>
+          </motion.div>
+        )}
+
+        <div ref={messagesEndRef} />
       </div>
 
+      {/* References Accordion */}
+      {references.length > 0 && (
+        <div className="border-t border-gray-100">
+          <button
+            onClick={() => setShowReferences(!showReferences)}
+            className="w-full flex items-center justify-between px-4 py-3 text-sm text-gray-500 hover:bg-gray-50"
+          >
+            <span>References ({references.length})</span>
+            <motion.div
+              animate={{ rotate: showReferences ? 180 : 0 }}
+              transition={{ duration: 0.2 }}
+            >
+              <ChevronDown className="w-4 h-4" />
+            </motion.div>
+          </button>
+          
+          <AnimatePresence>
+            {showReferences && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                className="overflow-hidden"
+              >
+                <div className="px-4 pb-4 space-y-2">
+                  {references.map((ref) => (
+                    <div
+                      key={ref.id}
+                      className="p-3 bg-gray-50 rounded-lg text-sm"
+                    >
+                      <p className="font-medium text-gray-800">{ref.title}</p>
+                      <p className="text-gray-500 text-xs mt-1">{ref.source}</p>
+                    </div>
+                  ))}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      )}
+
       {/* Input */}
-      <div className="p-4 bg-white border-t">
-        <form
-          onSubmit={(e) => {
-            e.preventDefault()
-            handleSend()
-          }}
-          className="flex gap-2"
-        >
-          <Input
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder="Type your question..."
-            className="flex-1"
+      <div className="border-t border-gray-100 p-4">
+        <div className="flex items-center gap-2">
+          <input
+            type="text"
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
+            onKeyPress={handleKeyPress}
+            placeholder="Ask a question..."
+            className="flex-1 px-4 py-3 bg-gray-100 rounded-full focus:outline-none focus:ring-2 focus:ring-black/10"
           />
-          <Button type="submit" size="icon" disabled={!input.trim()}>
+          <button
+            onClick={handleSend}
+            disabled={!inputValue.trim()}
+            className="p-3 bg-black text-white rounded-full disabled:opacity-30 disabled:cursor-not-allowed hover:bg-gray-800 transition-colors"
+          >
             <Send className="w-5 h-5" />
-          </Button>
-        </form>
+          </button>
+        </div>
       </div>
     </div>
   )
 }
-
