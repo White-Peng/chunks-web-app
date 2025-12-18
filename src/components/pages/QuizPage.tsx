@@ -1,192 +1,257 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { motion, AnimatePresence } from 'motion/react'
-import { ArrowLeft, Check, X } from 'lucide-react'
-import { useUserStore } from '@/stores/userStore'
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { motion } from 'motion/react';
+import { ArrowLeft, Check, X } from 'lucide-react';
+import { useUserStore } from '@/stores/userStore';
 
 export function QuizPage() {
-  const navigate = useNavigate()
-  const { currentStory } = useUserStore()
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
-  const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null)
-  const [showResult, setShowResult] = useState(false)
-  const [score, setScore] = useState(0)
+  const navigate = useNavigate();
+  const { currentStory } = useUserStore();
+  const [currentQuestion, setCurrentQuestion] = useState(0);
+  const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
+  const [showResult, setShowResult] = useState(false);
+  const [score, setScore] = useState(0);
+  const [answered, setAnswered] = useState(false);
 
-  if (!currentStory) {
-    navigate('/stories')
-    return null
-  }
-
-  const questions = currentStory.quiz.questions
-  const currentQuestion = questions[currentQuestionIndex]
-  const progress = ((currentQuestionIndex + 1) / questions.length) * 100
-
-  const handleSelectAnswer = (index: number) => {
-    if (selectedAnswer !== null) return
-    setSelectedAnswer(index)
-    
-    if (index === currentQuestion.correctAnswerIndex) {
-      setScore(score + 1)
+  useEffect(() => {
+    if (!currentStory) {
+      navigate('/stories');
     }
+  }, [currentStory, navigate]);
 
-    // Auto-advance after delay
-    setTimeout(() => {
-      if (currentQuestionIndex < questions.length - 1) {
-        setCurrentQuestionIndex(currentQuestionIndex + 1)
-        setSelectedAnswer(null)
-      } else {
-        setShowResult(true)
-      }
-    }, 1500)
-  }
+  if (!currentStory) return null;
 
-  const handleContinue = () => {
-    navigate('/actions')
-  }
+  const questions = currentStory.quiz.questions;
+
+  const handleAnswerSelect = (answerIndex: number) => {
+    if (answered) return;
+    
+    setSelectedAnswer(answerIndex);
+    setAnswered(true);
+
+    if (answerIndex === questions[currentQuestion].correctAnswerIndex) {
+      setScore(score + 1);
+    }
+  };
+
+  const handleNext = () => {
+    if (currentQuestion < questions.length - 1) {
+      setCurrentQuestion(currentQuestion + 1);
+      setSelectedAnswer(null);
+      setAnswered(false);
+    } else {
+      setShowResult(true);
+    }
+  };
 
   const handleRetry = () => {
-    setCurrentQuestionIndex(0)
-    setSelectedAnswer(null)
-    setShowResult(false)
-    setScore(0)
-  }
+    setCurrentQuestion(0);
+    setSelectedAnswer(null);
+    setShowResult(false);
+    setScore(0);
+    setAnswered(false);
+  };
 
   if (showResult) {
-    const percentage = Math.round((score / questions.length) * 100)
-    const isPassing = percentage >= 70
-
+    const percentage = Math.round((score / questions.length) * 100);
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-white px-8">
-        <motion.div
-          initial={{ scale: 0 }}
-          animate={{ scale: 1 }}
-          className="text-center"
-        >
-          <div className={`w-32 h-32 mx-auto rounded-full flex items-center justify-center mb-8 ${
-            isPassing ? 'bg-green-100' : 'bg-orange-100'
-          }`}>
-            <span className="text-5xl font-bold">{percentage}%</span>
-          </div>
-          
-          <h1 className="text-3xl font-bold mb-4">
-            {isPassing ? 'Great Job! 🎉' : 'Keep Learning! 📚'}
-          </h1>
-          
-          <p className="text-gray-500 mb-8">
-            You got {score} out of {questions.length} questions correct
-          </p>
+      <div className="min-h-screen bg-white flex flex-col">
+        {/* Header */}
+        <div className="sticky top-0 z-20 flex items-center justify-between px-4 py-4 bg-white border-b">
+          <button 
+            onClick={() => navigate('/actions')}
+            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+          >
+            <ArrowLeft className="w-6 h-6" />
+          </button>
+          <h2>Quiz Results</h2>
+          <div className="w-10"></div>
+        </div>
 
-          <div className="space-y-4">
-            <button
-              onClick={handleContinue}
-              className="w-full py-4 px-6 bg-black text-white rounded-full hover:bg-gray-800 transition-colors"
+        {/* Results */}
+        <div className="flex-1 flex items-center justify-center p-6">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="text-center max-w-md"
+          >
+            <motion.div
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ delay: 0.2, type: "spring" }}
+              className={`w-32 h-32 mx-auto mb-6 rounded-full flex items-center justify-center text-6xl ${
+                percentage >= 80 ? 'bg-green-100' : percentage >= 60 ? 'bg-yellow-100' : 'bg-red-100'
+              }`}
             >
-              Continue
-            </button>
+              {percentage >= 80 ? '🎉' : percentage >= 60 ? '👍' : '💪'}
+            </motion.div>
             
-            {!isPassing && (
+            <motion.h1
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+              className="mb-4"
+            >
+              {percentage >= 80 ? 'Excellent!' : percentage >= 60 ? 'Good Job!' : 'Keep Learning!'}
+            </motion.h1>
+            
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 }}
+              className="mb-6"
+            >
+              <p className="text-5xl mb-2">{percentage}%</p>
+              <p className="text-gray-600">
+                You got {score} out of {questions.length} questions correct
+              </p>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5 }}
+              className="space-y-3"
+            >
               <button
                 onClick={handleRetry}
-                className="w-full py-4 px-6 border-2 border-black rounded-full hover:bg-gray-50 transition-colors"
+                className="w-full py-4 bg-purple-500 text-white rounded-full hover:bg-purple-600 transition-colors"
               >
                 Try Again
               </button>
-            )}
-          </div>
-        </motion.div>
+              <button
+                onClick={() => navigate('/actions')}
+                className="w-full py-4 border-2 border-gray-200 rounded-full hover:border-gray-300 transition-colors"
+              >
+                Back to Actions
+              </button>
+            </motion.div>
+          </motion.div>
+        </div>
       </div>
-    )
+    );
   }
 
+  const currentQ = questions[currentQuestion];
+  const isCorrect = selectedAnswer === currentQ.correctAnswerIndex;
+
   return (
-    <div className="flex flex-col min-h-screen bg-white">
+    <div className="min-h-screen bg-white flex flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-4">
-        <button
-          onClick={() => navigate('/chunks')}
-          className="p-2 -ml-2 hover:bg-gray-100 rounded-full transition-colors"
+      <div className="sticky top-0 z-20 flex items-center justify-between px-4 py-4 bg-white border-b">
+        <button 
+          onClick={() => navigate('/actions')}
+          className="p-2 hover:bg-gray-100 rounded-full transition-colors"
         >
           <ArrowLeft className="w-6 h-6" />
         </button>
-        
-        {/* Progress Bar */}
-        <div className="flex-1 mx-4 h-1 bg-gray-200 rounded-full overflow-hidden">
+        <div className="flex-1 text-center">
+          <h2>Quiz</h2>
+          <p className="text-sm text-gray-500">Question {currentQuestion + 1} of {questions.length}</p>
+        </div>
+        <div className="w-10"></div>
+      </div>
+
+      {/* Progress Bar */}
+      <div className="px-4 py-4">
+        <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
           <motion.div
-            className="h-full bg-black"
-            animate={{ width: `${progress}%` }}
-            transition={{ duration: 0.3 }}
+            initial={{ width: 0 }}
+            animate={{ width: `${((currentQuestion + 1) / questions.length) * 100}%` }}
+            className="h-full bg-purple-500"
           />
         </div>
-        
-        <span className="text-sm text-gray-500">
-          {currentQuestionIndex + 1}/{questions.length}
-        </span>
       </div>
 
       {/* Question */}
-      <div className="flex-1 flex flex-col px-6 py-8">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={currentQuestionIndex}
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
-            className="flex-1"
-          >
-            <h2 className="text-2xl font-bold mb-8">
-              {currentQuestion.question}
-            </h2>
+      <div className="flex-1 px-6 py-8">
+        <motion.div
+          key={currentQuestion}
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+        >
+          <h1 className="mb-8">
+            {currentQ.question}
+          </h1>
 
-            {/* Options */}
-            <div className="space-y-3">
-              {currentQuestion.options.map((option, index) => {
-                const isSelected = selectedAnswer === index
-                const isCorrect = index === currentQuestion.correctAnswerIndex
-                const showFeedback = selectedAnswer !== null
+          <div className="space-y-3">
+            {currentQ.options.map((option, index) => {
+              const isSelected = selectedAnswer === index;
+              const isCorrectAnswer = index === currentQ.correctAnswerIndex;
+              const showCorrect = answered && isCorrectAnswer;
+              const showIncorrect = answered && isSelected && !isCorrect;
 
-                let buttonStyle = 'border-2 border-gray-200'
-                if (showFeedback && isCorrect) {
-                  buttonStyle = 'border-2 border-green-500 bg-green-50'
-                } else if (showFeedback && isSelected && !isCorrect) {
-                  buttonStyle = 'border-2 border-red-500 bg-red-50'
-                } else if (isSelected) {
-                  buttonStyle = 'border-2 border-black'
-                }
+              return (
+                <motion.button
+                  key={index}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: index * 0.1 }}
+                  onClick={() => handleAnswerSelect(index)}
+                  disabled={answered}
+                  className={`w-full p-4 rounded-2xl border-2 text-left transition-all ${
+                    showCorrect
+                      ? 'border-green-500 bg-green-50'
+                      : showIncorrect
+                      ? 'border-red-500 bg-red-50'
+                      : isSelected
+                      ? 'border-purple-500 bg-purple-50'
+                      : 'border-gray-200 hover:border-gray-300'
+                  } ${answered ? 'cursor-default' : 'cursor-pointer active:scale-95'}`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
+                      showCorrect
+                        ? 'border-green-500 bg-green-500'
+                        : showIncorrect
+                        ? 'border-red-500 bg-red-500'
+                        : isSelected
+                        ? 'border-purple-500'
+                        : 'border-gray-300'
+                    }`}>
+                      {showCorrect && <Check className="w-4 h-4 text-white" />}
+                      {showIncorrect && <X className="w-4 h-4 text-white" />}
+                    </div>
+                    <span className="flex-1">{option}</span>
+                  </div>
+                </motion.button>
+              );
+            })}
+          </div>
 
-                return (
-                  <button
-                    key={index}
-                    onClick={() => handleSelectAnswer(index)}
-                    disabled={selectedAnswer !== null}
-                    className={`w-full py-4 px-6 rounded-2xl text-left transition-all flex items-center justify-between ${buttonStyle}`}
-                  >
-                    <span>{option}</span>
-                    {showFeedback && isCorrect && (
-                      <Check className="w-5 h-5 text-green-500" />
-                    )}
-                    {showFeedback && isSelected && !isCorrect && (
-                      <X className="w-5 h-5 text-red-500" />
-                    )}
-                  </button>
-                )
-              })}
-            </div>
-
-            {/* Explanation */}
-            {selectedAnswer !== null && (
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="mt-6 p-4 bg-gray-50 rounded-2xl"
-              >
-                <p className="text-sm text-gray-600">
-                  {currentQuestion.explanation}
-                </p>
-              </motion.div>
-            )}
-          </motion.div>
-        </AnimatePresence>
+          {/* Explanation */}
+          {answered && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className={`mt-6 p-4 rounded-2xl ${
+                isCorrect ? 'bg-green-50 border-2 border-green-200' : 'bg-red-50 border-2 border-red-200'
+              }`}
+            >
+              <p className={`mb-2 ${isCorrect ? 'text-green-900' : 'text-red-900'}`}>
+                {isCorrect ? '✓ Correct!' : '✗ Incorrect'}
+              </p>
+              <p className="text-gray-700 text-sm">{currentQ.explanation}</p>
+            </motion.div>
+          )}
+        </motion.div>
       </div>
+
+      {/* Next Button */}
+      {answered && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="px-6 pb-8"
+        >
+          <button
+            onClick={handleNext}
+            className="w-full py-4 bg-purple-500 text-white rounded-full hover:bg-purple-600 transition-colors"
+          >
+            {currentQuestion < questions.length - 1 ? 'Next Question' : 'See Results'}
+          </button>
+        </motion.div>
+      )}
     </div>
-  )
+  );
 }

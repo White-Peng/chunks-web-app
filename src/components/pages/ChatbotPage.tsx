@@ -1,242 +1,305 @@
-import { useState, useRef, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { motion, AnimatePresence } from 'motion/react'
-import { ArrowLeft, Send, ChevronDown } from 'lucide-react'
-import { useUserStore } from '@/stores/userStore'
+import { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'motion/react';
+import { Home, Send, BookOpen } from 'lucide-react';
+import { useUserStore } from '@/stores/userStore';
 
 interface Message {
-  id: string
-  role: 'user' | 'assistant'
-  content: string
-  timestamp: Date
+  id: number;
+  text: string;
+  sender: 'user' | 'bot';
+  timestamp: Date;
 }
 
 interface Reference {
-  id: string
-  title: string
-  source: string
+  id: number;
+  title: string;
+  url: string;
+  source: string;
 }
 
 export function ChatbotPage() {
-  const navigate = useNavigate()
-  const { currentStory } = useUserStore()
-  const [messages, setMessages] = useState<Message[]>([])
-  const [inputValue, setInputValue] = useState('')
-  const [isTyping, setIsTyping] = useState(false)
-  const [showReferences, setShowReferences] = useState(false)
-  const messagesEndRef = useRef<HTMLDivElement>(null)
+  const navigate = useNavigate();
+  const { currentStory } = useUserStore();
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [input, setInput] = useState('');
+  const [isTyping, setIsTyping] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [showMotivation, setShowMotivation] = useState(true);
+  const [showReferences, setShowReferences] = useState(false);
 
-  // Sample references based on story
-  const references: Reference[] = currentStory ? [
-    { id: '1', title: 'Understanding ' + currentStory.title, source: 'Wikipedia' },
-    { id: '2', title: 'A Deep Dive into the Topic', source: 'Scientific American' },
-    { id: '3', title: 'Further Reading', source: 'Nature Journal' },
-  ] : []
-
-  // Initial greeting
-  useEffect(() => {
-    if (messages.length === 0 && currentStory) {
-      setTimeout(() => {
-        setMessages([
-          {
-            id: '1',
-            role: 'assistant',
-            content: `Great job completing the chunks on "${currentStory.title}"! 🎉 Feel free to ask me any questions about what you've learned.`,
-            timestamp: new Date(),
-          },
-        ])
-      }, 500)
+  // Mock references data
+  const references: Reference[] = [
+    {
+      id: 1,
+      title: "Understanding Modern Technology Trends",
+      url: "https://example.com/article1",
+      source: "Tech Journal"
+    },
+    {
+      id: 2,
+      title: "The Future of Innovation",
+      url: "https://example.com/article2",
+      source: "Innovation Quarterly"
+    },
+    {
+      id: 3,
+      title: "Expert Insights on Industry Changes",
+      url: "https://example.com/article3",
+      source: "Industry Review"
+    },
+    {
+      id: 4,
+      title: "Historical Perspectives and Context",
+      url: "https://example.com/article4",
+      source: "Academic Press"
     }
-  }, [currentStory, messages.length])
+  ];
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages])
+    if (currentStory) {
+      // Show motivation message for 2 seconds, then send first bot message
+      setTimeout(() => {
+        setShowMotivation(false);
+        
+        // After motivation fades, send bot's first message
+        setTimeout(() => {
+          setMessages([{
+            id: 1,
+            text: `Hi! I'm here to help you reflect on "${currentStory.title}". Feel free to ask me any questions about what you've learned!`,
+            sender: 'bot',
+            timestamp: new Date()
+          }]);
+        }, 300);
+      }, 2000);
+    }
+  }, [currentStory]);
 
-  const handleSend = async () => {
-    if (!inputValue.trim()) return
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages, isTyping]);
+
+  const generateBotResponse = (userMessage: string): string => {
+    const lowerMessage = userMessage.toLowerCase();
+    const storyTitle = currentStory?.title || 'this topic';
+    
+    if (lowerMessage.includes('summary') || lowerMessage.includes('summarize')) {
+      return `Great question! The key takeaway from "${storyTitle}" is understanding how different perspectives shape our view of this topic. The chunks you read covered various aspects from historical context to future trends.`;
+    }
+    
+    if (lowerMessage.includes('why') || lowerMessage.includes('reason')) {
+      return `That's an insightful question! This topic is important because it impacts how we think about and approach related concepts. Each chunk revealed different layers of understanding.`;
+    }
+    
+    if (lowerMessage.includes('how') || lowerMessage.includes('what')) {
+      return `Excellent question! Based on the chunks you've read, there are multiple approaches to this. The real-world applications we covered show practical ways this manifests in everyday life.`;
+    }
+    
+    if (lowerMessage.includes('example')) {
+      return `From what you've learned, you can apply these insights in various scenarios. The expert perspectives shared some compelling examples of implementation.`;
+    }
+
+    if (lowerMessage.includes('more') || lowerMessage.includes('learn')) {
+      return `I can see you're curious to learn more! The deep dive chunk touched on advanced aspects. Consider exploring related topics or revisiting the full article for additional details.`;
+    }
+    
+    return `That's a thought-provoking question about "${storyTitle}". Based on the chunks you've read, this connects to the broader themes of understanding context, expert insights, and real-world applications. What specific aspect interests you most?`;
+  };
+
+  const handleSend = () => {
+    if (!input.trim()) return;
 
     const userMessage: Message = {
-      id: Date.now().toString(),
-      role: 'user',
-      content: inputValue.trim(),
-      timestamp: new Date(),
-    }
+      id: messages.length + 1,
+      text: input,
+      sender: 'user',
+      timestamp: new Date()
+    };
 
-    setMessages((prev) => [...prev, userMessage])
-    setInputValue('')
-    setIsTyping(true)
+    setMessages(prev => [...prev, userMessage]);
+    setInput('');
+    setIsTyping(true);
 
-    // Simulate AI response
+    // Simulate bot thinking time
     setTimeout(() => {
-      const aiResponse: Message = {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: generateResponse(userMessage.content),
-        timestamp: new Date(),
-      }
-      setMessages((prev) => [...prev, aiResponse])
-      setIsTyping(false)
-    }, 1500)
-  }
-
-  const generateResponse = (userInput: string): string => {
-    const lowerInput = userInput.toLowerCase()
-    
-    if (lowerInput.includes('what') && lowerInput.includes('learn')) {
-      return `Based on your reading about "${currentStory?.title}", you learned about the key concepts including the main ideas presented in each chunk. Would you like me to summarize any specific part?`
-    }
-    
-    if (lowerInput.includes('explain') || lowerInput.includes('more')) {
-      return `Great question! The topic we explored covers several fascinating aspects. Let me break it down further for you...`
-    }
-    
-    if (lowerInput.includes('quiz') || lowerInput.includes('test')) {
-      return `You can take the quiz anytime! Just head back and select "Take Quiz" to test your knowledge on "${currentStory?.title}".`
-    }
-
-    return `That's an interesting question! Based on what you read about "${currentStory?.title}", I'd say this relates to the broader concepts we covered. Would you like me to elaborate on any specific aspect?`
-  }
+      const botResponse: Message = {
+        id: messages.length + 2,
+        text: generateBotResponse(input),
+        sender: 'bot',
+        timestamp: new Date()
+      };
+      setMessages(prev => [...prev, botResponse]);
+      setIsTyping(false);
+    }, 1000 + Math.random() * 1000);
+  };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault()
-      handleSend()
+      e.preventDefault();
+      handleSend();
     }
-  }
+  };
+
+  const handleFinish = () => {
+    // Mark current story as consumed and navigate to stories
+    if (currentStory) {
+      const consumedStories = JSON.parse(localStorage.getItem('consumedStories') || '[]');
+      if (!consumedStories.includes(currentStory.id)) {
+        consumedStories.push(currentStory.id);
+        localStorage.setItem('consumedStories', JSON.stringify(consumedStories));
+      }
+    }
+    navigate('/stories');
+  };
 
   return (
-    <div className="flex flex-col min-h-screen bg-white">
+    <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-4 border-b border-gray-100">
-        <button
-          onClick={() => navigate('/actions')}
-          className="p-2 -ml-2 hover:bg-gray-100 rounded-full transition-colors"
+      <div className="sticky top-0 z-20 flex items-center justify-between px-4 py-4 bg-white border-b">
+        <button 
+          onClick={() => navigate('/chunks')}
+          className="hover:opacity-70 transition-opacity"
         >
-          <ArrowLeft className="w-6 h-6" />
+          Chunks
         </button>
-        <h2 className="font-medium">Chat with Chunks AI</h2>
-        <div className="w-10"></div>
+        <div className="flex-1"></div>
+        <button 
+          onClick={handleFinish}
+          className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+        >
+          <Home className="w-6 h-6" />
+        </button>
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-4 py-6">
-        <AnimatePresence>
-          {messages.map((message) => (
-            <motion.div
-              key={message.id}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0 }}
-              className={`mb-4 flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
-            >
-              <div
-                className={`max-w-[80%] px-4 py-3 rounded-2xl ${
-                  message.role === 'user'
-                    ? 'bg-black text-white rounded-br-md'
-                    : 'bg-gray-100 text-black rounded-bl-md'
-                }`}
-              >
-                <p className="text-sm leading-relaxed">{message.content}</p>
-              </div>
-            </motion.div>
-          ))}
-        </AnimatePresence>
+      <div className="flex-1 overflow-y-auto px-4 py-6 space-y-4">
+        {/* Motivation Message */}
+        {showMotivation && (
+          <motion.div
+            initial={{ opacity: 1 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.5 }}
+            className="flex justify-center items-center h-full"
+          >
+            <div className="text-center">
+              <p className="text-gray-600">Great Job!</p>
+              <p className="text-sm text-gray-500 mt-2">You've completed all chunks. Let's reflect together</p>
+            </div>
+          </motion.div>
+        )}
 
-        {/* Typing Indicator */}
+        {!showMotivation && messages.map((message, index) => (
+          <motion.div
+            key={message.id}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: index * 0.1 }}
+            className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
+          >
+            <div
+              className={`max-w-[80%] rounded-2xl px-4 py-3 ${
+                message.sender === 'user'
+                  ? 'bg-purple-500 text-white'
+                  : 'bg-white text-gray-900 border border-gray-200'
+              }`}
+            >
+              <p className="text-sm">{message.text}</p>
+            </div>
+          </motion.div>
+        ))}
+        
         {isTyping && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="flex justify-start mb-4"
+            className="flex justify-start"
           >
-            <div className="bg-gray-100 px-4 py-3 rounded-2xl rounded-bl-md">
+            <div className="bg-white border border-gray-200 rounded-2xl px-4 py-3">
               <div className="flex gap-1">
-                <motion.div
+                <motion.span
+                  animate={{ opacity: [0.4, 1, 0.4] }}
+                  transition={{ duration: 1, repeat: Infinity, delay: 0 }}
                   className="w-2 h-2 bg-gray-400 rounded-full"
-                  animate={{ y: [0, -5, 0] }}
-                  transition={{ repeat: Infinity, duration: 0.6, delay: 0 }}
                 />
-                <motion.div
+                <motion.span
+                  animate={{ opacity: [0.4, 1, 0.4] }}
+                  transition={{ duration: 1, repeat: Infinity, delay: 0.2 }}
                   className="w-2 h-2 bg-gray-400 rounded-full"
-                  animate={{ y: [0, -5, 0] }}
-                  transition={{ repeat: Infinity, duration: 0.6, delay: 0.2 }}
                 />
-                <motion.div
+                <motion.span
+                  animate={{ opacity: [0.4, 1, 0.4] }}
+                  transition={{ duration: 1, repeat: Infinity, delay: 0.4 }}
                   className="w-2 h-2 bg-gray-400 rounded-full"
-                  animate={{ y: [0, -5, 0] }}
-                  transition={{ repeat: Infinity, duration: 0.6, delay: 0.4 }}
                 />
               </div>
             </div>
           </motion.div>
         )}
-
         <div ref={messagesEndRef} />
       </div>
 
-      {/* References Accordion */}
-      {references.length > 0 && (
-        <div className="border-t border-gray-100">
+      {/* Input */}
+      <div className="sticky bottom-0 bg-white border-t px-4 py-4">
+        {/* Book Icon Button - above input */}
+        <div className="flex justify-center mb-3">
           <button
             onClick={() => setShowReferences(!showReferences)}
-            className="w-full flex items-center justify-between px-4 py-3 text-sm text-gray-500 hover:bg-gray-50"
+            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
           >
-            <span>References ({references.length})</span>
-            <motion.div
-              animate={{ rotate: showReferences ? 180 : 0 }}
-              transition={{ duration: 0.2 }}
-            >
-              <ChevronDown className="w-4 h-4" />
-            </motion.div>
+            <BookOpen className="w-5 h-5 text-gray-600" />
           </button>
-          
-          <AnimatePresence>
-            {showReferences && (
-              <motion.div
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: 'auto', opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                transition={{ duration: 0.2 }}
-                className="overflow-hidden"
-              >
-                <div className="px-4 pb-4 space-y-2">
+        </div>
+
+        {/* References List */}
+        <AnimatePresence>
+          {showReferences && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.2 }}
+              className="mb-4 overflow-hidden"
+            >
+              <div className="bg-gray-50 rounded-xl p-4 max-h-64 overflow-y-auto">
+                <h3 className="text-sm mb-3 text-gray-700">References</h3>
+                <div className="space-y-2">
                   {references.map((ref) => (
-                    <div
+                    <a
                       key={ref.id}
-                      className="p-3 bg-gray-50 rounded-lg text-sm"
+                      href={ref.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block p-3 bg-white rounded-lg border border-gray-200 hover:border-purple-300 hover:bg-purple-50 transition-colors"
                     >
-                      <p className="font-medium text-gray-800">{ref.title}</p>
-                      <p className="text-gray-500 text-xs mt-1">{ref.source}</p>
-                    </div>
+                      <p className="text-sm text-gray-900">{ref.title}</p>
+                      <p className="text-xs text-gray-500 mt-1">{ref.source}</p>
+                    </a>
                   ))}
                 </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-      )}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-      {/* Input */}
-      <div className="border-t border-gray-100 p-4">
-        <div className="flex items-center gap-2">
+        <div className="flex gap-2">
           <input
             type="text"
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
             onKeyPress={handleKeyPress}
             placeholder="Ask a question..."
-            className="flex-1 px-4 py-3 bg-gray-100 rounded-full focus:outline-none focus:ring-2 focus:ring-black/10"
+            className="flex-1 px-4 py-3 border border-gray-300 rounded-full focus:outline-none focus:border-purple-500 transition-colors"
           />
           <button
             onClick={handleSend}
-            disabled={!inputValue.trim()}
-            className="p-3 bg-black text-white rounded-full disabled:opacity-30 disabled:cursor-not-allowed hover:bg-gray-800 transition-colors"
+            disabled={!input.trim()}
+            className="p-3 bg-purple-500 text-white rounded-full hover:bg-purple-600 disabled:opacity-50 disabled:hover:bg-purple-500 transition-colors"
           >
             <Send className="w-5 h-5" />
           </button>
         </div>
       </div>
     </div>
-  )
+  );
 }

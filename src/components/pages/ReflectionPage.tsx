@@ -1,111 +1,126 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { motion } from 'motion/react'
-import { ArrowLeft, X } from 'lucide-react'
-import { useUserStore } from '@/stores/userStore'
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { motion } from 'motion/react';
+import { ArrowLeft, ChevronDown } from 'lucide-react';
+import { useUserStore } from '@/stores/userStore';
+
+const REFLECTION_QUESTIONS = [
+  "How does this topic connect to your personal experiences?",
+  "What's the most surprising thing you learned from this?",
+  "How might this information change your perspective?",
+  "What questions does this raise for you?",
+  "How could you apply this knowledge in your daily life?",
+  "What emotions does this topic evoke for you?"
+];
 
 export function ReflectionPage() {
-  const navigate = useNavigate()
-  const { currentStory } = useUserStore()
-  const [reflection, setReflection] = useState('')
+  const navigate = useNavigate();
+  const { currentStory } = useUserStore();
+  const [question, setQuestion] = useState('');
+  const [showContinue, setShowContinue] = useState(false);
 
-  const handleSave = () => {
-    // Save reflection to localStorage
-    if (currentStory && reflection.trim()) {
-      const reflections = JSON.parse(localStorage.getItem('reflections') || '{}')
-      reflections[currentStory.id] = {
-        text: reflection,
-        timestamp: new Date().toISOString(),
-      }
-      localStorage.setItem('reflections', JSON.stringify(reflections))
+  useEffect(() => {
+    if (currentStory) {
+      // Select a random reflection question
+      const randomQuestion = REFLECTION_QUESTIONS[Math.floor(Math.random() * REFLECTION_QUESTIONS.length)];
+      setQuestion(randomQuestion);
+    } else {
+      navigate('/stories');
     }
-    navigate('/quiz')
-  }
 
-  const handleSkip = () => {
-    navigate('/quiz')
-  }
+    // Show continue hint after 3 seconds
+    const timer = setTimeout(() => setShowContinue(true), 3000);
+    return () => clearTimeout(timer);
+  }, [currentStory, navigate]);
+
+  const handleContinue = () => {
+    navigate('/chunks');
+  };
+
+  if (!currentStory) return null;
 
   return (
-    <div className="flex flex-col min-h-screen bg-white">
+    <div className="fixed inset-0 bg-white overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-4">
-        <button
-          onClick={() => navigate('/chunks')}
-          className="p-2 -ml-2 hover:bg-gray-100 rounded-full transition-colors"
+      <div className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between px-4 py-4 bg-white border-b">
+        <button 
+          onClick={() => navigate('/stories')}
+          className="p-2 hover:bg-gray-100 rounded-full transition-colors"
         >
           <ArrowLeft className="w-6 h-6" />
         </button>
-        
-        <h2 className="font-medium">Reflection</h2>
-        
-        <button
-          onClick={handleSkip}
-          className="p-2 -mr-2 hover:bg-gray-100 rounded-full transition-colors"
-        >
-          <X className="w-6 h-6" />
-        </button>
+        <h2>Reflect</h2>
+        <div className="w-10"></div>
       </div>
 
       {/* Content */}
-      <motion.div 
-        className="flex-1 flex flex-col px-6 py-8"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-      >
-        <h1 className="text-2xl font-bold mb-4">
-          What stood out to you?
-        </h1>
-        <p className="text-gray-500 mb-8">
-          Take a moment to reflect on what you just learned about "{currentStory?.title}".
-        </p>
-
-        {/* Textarea */}
-        <textarea
-          value={reflection}
-          onChange={(e) => setReflection(e.target.value)}
-          placeholder="Write your thoughts here..."
-          className="flex-1 min-h-[200px] p-4 bg-gray-50 rounded-2xl resize-none focus:outline-none focus:ring-2 focus:ring-black/10 text-lg"
-        />
-
-        {/* Prompts */}
-        <div className="mt-6 space-y-2">
-          <p className="text-sm text-gray-400">Prompts to consider:</p>
-          <div className="flex flex-wrap gap-2">
-            {['What surprised me?', 'How does this connect?', 'What questions do I have?'].map((prompt) => (
-              <button
-                key={prompt}
-                onClick={() => setReflection((prev) => prev + (prev ? '\n\n' : '') + prompt + ' ')}
-                className="px-3 py-1.5 bg-gray-100 rounded-full text-sm text-gray-600 hover:bg-gray-200 transition-colors"
-              >
-                {prompt}
-              </button>
-            ))}
+      <div className="flex flex-col items-center justify-center min-h-screen px-8 pb-24">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className="text-center space-y-8 max-w-lg"
+        >
+          {/* Topic Title */}
+          <div className="space-y-2">
+            <p className="text-gray-500 uppercase tracking-wider text-sm">
+              Topic
+            </p>
+            <h2>{currentStory.title}</h2>
           </div>
-        </div>
+
+          {/* Reflection Question */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.3, duration: 0.6 }}
+            className="p-8 bg-gradient-to-br from-blue-50 to-purple-50 rounded-3xl"
+          >
+            <h1 className="leading-tight">
+              {question}
+            </h1>
+          </motion.div>
+
+          {/* Instructions */}
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.6, duration: 0.6 }}
+            className="text-gray-600"
+          >
+            Take a moment to think about this question. When you're ready, scroll down to continue.
+          </motion.p>
+        </motion.div>
+      </div>
+
+      {/* Continue Hint */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: showContinue ? 1 : 0, y: showContinue ? 0 : 20 }}
+        transition={{ duration: 0.4 }}
+        className="fixed bottom-8 left-0 right-0 flex flex-col items-center gap-2 pointer-events-none"
+      >
+        <motion.div
+          animate={{ y: [0, -10, 0] }}
+          transition={{ duration: 1.5, repeat: Infinity }}
+        >
+          <ChevronDown className="w-6 h-6 text-gray-400 rotate-180" />
+        </motion.div>
+        <p className="text-gray-400 text-sm">Swipe up to continue</p>
       </motion.div>
 
-      {/* Footer */}
-      <div className="p-6 space-y-3">
-        <button
-          onClick={handleSave}
-          disabled={!reflection.trim()}
-          className={`w-full py-4 px-6 rounded-full transition-all ${
-            reflection.trim()
-              ? 'bg-black text-white hover:bg-gray-800'
-              : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-          }`}
-        >
-          Save & Continue
-        </button>
-        
-        <button
-          onClick={handleSkip}
-          className="w-full py-4 px-6 text-gray-500 hover:text-black transition-colors"
-        >
-          Skip for now
-        </button>
-      </div>
+      {/* Swipe Area for Continue */}
+      <motion.div
+        className="fixed inset-0 cursor-pointer"
+        drag="y"
+        dragConstraints={{ top: 0, bottom: 0 }}
+        dragElastic={0.2}
+        onDragEnd={(_event, info) => {
+          if (info.offset.y < -100) {
+            handleContinue();
+          }
+        }}
+      />
     </div>
-  )
+  );
 }

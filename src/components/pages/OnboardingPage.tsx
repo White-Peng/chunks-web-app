@@ -1,114 +1,84 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { motion, AnimatePresence } from 'motion/react'
-import { ArrowLeft, Check } from 'lucide-react'
-import { useUserStore } from '@/stores/userStore'
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useUserStore } from '@/stores/userStore';
 
 const INTERESTS = [
-  { id: 'technology', label: 'Technology', emoji: '💻' },
-  { id: 'science', label: 'Science', emoji: '🔬' },
-  { id: 'art', label: 'Art & Design', emoji: '🎨' },
-  { id: 'business', label: 'Business', emoji: '💼' },
-  { id: 'health', label: 'Health & Wellness', emoji: '🧘' },
-  { id: 'history', label: 'History', emoji: '📜' },
-  { id: 'psychology', label: 'Psychology', emoji: '🧠' },
-  { id: 'philosophy', label: 'Philosophy', emoji: '🤔' },
-  { id: 'nature', label: 'Nature', emoji: '🌿' },
-  { id: 'music', label: 'Music', emoji: '🎵' },
-  { id: 'travel', label: 'Travel', emoji: '✈️' },
-  { id: 'food', label: 'Food & Cooking', emoji: '🍳' },
-]
+  'Travelling',
+  'Books',
+  'DIY',
+  'Tech',
+  'Food',
+  'Arts',
+  'News',
+  'Music',
+  'Sports'
+];
 
 export function OnboardingPage() {
-  const navigate = useNavigate()
-  const { setInterests } = useUserStore()
-  const [selectedInterests, setSelectedInterests] = useState<string[]>([])
+  const navigate = useNavigate();
+  const { setInterests } = useUserStore();
+  const [selectedInterests, setSelectedInterests] = useState<string[]>([]);
 
-  const toggleInterest = (id: string) => {
-    setSelectedInterests((prev) =>
-      prev.includes(id)
-        ? prev.filter((i) => i !== id)
-        : [...prev, id]
-    )
-  }
+  const toggleInterest = (interest: string) => {
+    setSelectedInterests(prev =>
+      prev.includes(interest)
+        ? prev.filter(i => i !== interest)
+        : [...prev, interest]
+    );
+  };
 
-  const handleContinue = () => {
-    setInterests(selectedInterests)
-    navigate('/welcome-home')
-  }
-
-  const canContinue = selectedInterests.length >= 3
+  const handleSubmit = () => {
+    if (selectedInterests.length > 0) {
+      setInterests(selectedInterests);
+      navigate('/welcome-home');
+    }
+  };
 
   return (
-    <div className="flex flex-col min-h-screen bg-white px-6 py-8">
-      {/* Header */}
-      <button
-        onClick={() => navigate('/signup')}
-        className="p-2 -ml-2 hover:bg-gray-100 rounded-full transition-colors w-fit"
-      >
-        <ArrowLeft className="w-6 h-6" />
-      </button>
+    <div className="flex flex-col h-screen bg-white">
+      {/* Header - Fixed */}
+      <div className="flex-shrink-0 pt-16 pb-6 px-6">
+        <h1 className="text-center mb-2">Chunks Made for You</h1>
+        <p className="text-center text-gray-600">Select Your Interests</p>
+      </div>
 
-      <motion.div
-        className="flex-1 flex flex-col max-w-md mx-auto w-full pt-8"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-      >
-        <h1 className="text-3xl font-bold mb-2">What interests you?</h1>
-        <p className="text-gray-500 mb-8">
-          Select at least 3 topics to personalize your experience
-        </p>
-
-        {/* Interest Grid */}
-        <div className="grid grid-cols-2 gap-3 flex-1">
-          {INTERESTS.map((interest) => {
-            const isSelected = selectedInterests.includes(interest.id)
-            return (
-              <motion.button
-                key={interest.id}
-                onClick={() => toggleInterest(interest.id)}
-                whileTap={{ scale: 0.95 }}
-                className={`p-4 rounded-2xl border-2 transition-all flex flex-col items-center gap-2 ${
-                  isSelected
-                    ? 'border-black bg-black text-white'
-                    : 'border-gray-200 hover:border-gray-300'
+      {/* Scrollable Interests Container with gradient overlay */}
+      <div className="flex-1 relative px-6 overflow-hidden">
+        <div className="absolute inset-0 overflow-y-auto pb-4">
+          <div className="space-y-4">
+            {INTERESTS.map((interest) => (
+              <button
+                key={interest}
+                onClick={() => toggleInterest(interest)}
+                className={`w-full py-6 px-6 border-2 rounded-3xl transition-all ${
+                  selectedInterests.includes(interest)
+                    ? 'border-black bg-gray-50'
+                    : 'border-gray-300 bg-white hover:border-gray-400'
                 }`}
               >
-                <span className="text-2xl">{interest.emoji}</span>
-                <span className="text-sm font-medium">{interest.label}</span>
-                <AnimatePresence>
-                  {isSelected && (
-                    <motion.div
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      exit={{ scale: 0 }}
-                      className="absolute top-2 right-2"
-                    >
-                      <Check className="w-4 h-4" />
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </motion.button>
-            )
-          })}
+                {interest}
+              </button>
+            ))}
+          </div>
         </div>
+        {/* Gradient overlay at bottom */}
+        <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-white to-transparent pointer-events-none"></div>
+      </div>
 
-        {/* Continue Button */}
-        <div className="pt-8 pb-4">
-          <button
-            onClick={handleContinue}
-            disabled={!canContinue}
-            className={`w-full py-4 px-6 rounded-full transition-all ${
-              canContinue
-                ? 'bg-black text-white hover:bg-gray-800'
-                : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-            }`}
-          >
-            CONTINUE ({selectedInterests.length}/3 selected)
-          </button>
-        </div>
-      </motion.div>
+      {/* Submit Button - Fixed at bottom */}
+      <div className="flex-shrink-0 px-6 pb-8 pt-4 bg-white">
+        <button
+          onClick={handleSubmit}
+          disabled={selectedInterests.length === 0}
+          className={`w-full max-w-sm mx-auto block py-4 rounded-lg transition-all ${
+            selectedInterests.length > 0
+              ? 'bg-red-500 text-white hover:bg-red-600'
+              : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+          }`}
+        >
+          SUBMIT
+        </button>
+      </div>
     </div>
-  )
+  );
 }
